@@ -1,0 +1,5 @@
+C:\Program Files (x86)\Combined Community Codec Pack\unins000.exe
+C:\Program Files (x86)\HP Games\Hoyle Card Games\uninstall\uninstaller.exe
+C:\Program Files (x86)\HP Games\Uninstall.exe
+C:\Program Files\AskBarDis\unins000.exe
+C:\Program Files\HP Photo Creations\uninst.exe
