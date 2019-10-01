@@ -26,7 +26,6 @@ goto eof
 	exit /b
 
 :CleanTemp 
-	if exist "%ProgramFiles%\Quest\KACE" (set "KBOX_INSTALL_DIR=%PROGRAMDATA%\Quest\KACE") else (set "KBOX_INSTALL_DIR=%PROGRAMDATA%\Dell\KACE")
 	for /D %%f in ("%SystemRoot%\System32\Macromed\Flash\*") do RD /S /Q "%%f"
 	for %%f in (%SystemRoot%\System32\Macromed\Flash\*") do DEL /F /S /Q "%%f"
 
