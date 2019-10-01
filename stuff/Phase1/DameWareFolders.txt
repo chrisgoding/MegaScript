@@ -1,0 +1,8 @@
+C:\Program Files (x86)\SolarWinds\DameWare Remote Support
+C:\ProgramData\DameWare Development
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\SolarWinds\DameWare Remote Support
+C:\ProgramData\SolarWinds
+C:\Users\Administrator\AppData\Roaming\DameWare Development
+C:\Users\All Users\Microsoft\Windows\Start Menu\Programs\SolarWinds\DameWare Remote Support
+C:\Users\All Users\SolarWinds
+C:\Windows\dwrcs
