@@ -71,7 +71,12 @@ ForFiles /p "C:\IT Folder\Megascript Progress Report" /s /d -180 /c "cmd /c del 
 "%SystemPath%\shutdown.exe" -r -t 10800 -f && Echo 3 Hour Shutdown Scheduled
 
 call disabletrend.bat &:: unloads antivirus to prevent issues with installations. Also makes this whole thing run faster.
-Echo Trend Unloaded
+
+:fixbootsettings &:: because we had some PC's that had 3gb usable out of 8gb installed. No, they weren't 32-bit...
+	"%SystemPath%\bcdedit.exe" | "%SystemPath%\find.exe" /i "allowedinmemorysettings"
+	if %errorlevel%==0 "%SystemPath%\bcdedit.exe" /deletevalue allowedinmemorysettings
+	"%SystemPath%\bcdedit.exe" | "%SystemPath%\find.exe" /i "truncatememory"
+	if %errorlevel%==0 "%SystemPath%\bcdedit.exe" /deletevalue truncatememory
 
 :excludepublicsafety &:: There are some PC's that we don't want to do some steps to.
 	echo %computername% | "%SystemPath%\find.exe" /i "BENCH"
@@ -100,8 +105,6 @@ Echo Trend Unloaded
 "%SystemPath%\Robocopy.exe" "IT Folder" "C:\IT Folder\Area 51" /MIR /XD "IT Folder\MegaScript Progress Report\" &:: Upgrades the IT Folder to the latest copy
 xcopy AddRemoteApps.bat "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp" /Y
 xcopy "IT Tickets.url" C:\Users\Public\Desktop /y
-
-Echo IT Folder Upgraded to Latest Copy
 
 if exist "C:\users\administrator" copy "C:\IT Folder\Area 51\1. rename pc and join domain.bat" "C:\users\administrator\Desktop\1. rename pc and join domain.bat" /Y
 if exist "C:\users\administrator" copy "C:\IT Folder\Area 51\2. Move PC into the correct OU.txt" "C:\users\administrator\Desktop\2. Move PC into the correct OU.txt" /Y
