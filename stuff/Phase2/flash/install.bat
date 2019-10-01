@@ -27,17 +27,17 @@ goto eof
 
 :CleanTemp 
 	if exist "%ProgramFiles%\Quest\KACE" (set "KBOX_INSTALL_DIR=%PROGRAMDATA%\Quest\KACE") else (set "KBOX_INSTALL_DIR=%PROGRAMDATA%\Dell\KACE")
-	for /D %%f in ("%SystemRoot%\System32\Macromed\Flash\*") do RD /S /Q "%%f"			&:: delete folders
-	for %%f in (%SystemRoot%\System32\Macromed\Flash\*") do DEL /F /S /Q "%%f"			&:: delete files
+	for /D %%f in ("%SystemRoot%\System32\Macromed\Flash\*") do RD /S /Q "%%f"
+	for %%f in (%SystemRoot%\System32\Macromed\Flash\*") do DEL /F /S /Q "%%f"
 
-	for /D %%f in ("%SystemRoot%\SysWOW64\Macromed\Flash\*") do RD /S /Q "%%f"			&:: delete folders
-	for %%f in ("%SystemRoot%\SysWOW64\Macromed\Flash\*") do DEL /F /S /Q "%%f"			&:: delete files
+	for /D %%f in ("%SystemRoot%\SysWOW64\Macromed\Flash\*") do RD /S /Q "%%f"
+	for %%f in ("%SystemRoot%\SysWOW64\Macromed\Flash\*") do DEL /F /S /Q "%%f"
 
-	for /D %%u in ("C:\Users\*") do for /D %%f In ("C:\Users\%%~nxu\AppData\Roaming\Adobe\Flash Player\*") do RD /S /Q "%%f"		&:: delete folders
-	for /D %%u in ("C:\Users\*") do for %%f In ("C:\Users\%%~nxu\AppData\Roaming\Adobe\Flash Player\*") do DEL /F /S /Q "%%f"	&:: delete files
+	for /D %%u in ("C:\Users\*") do for /D %%f In ("C:\Users\%%~nxu\AppData\Roaming\Adobe\Flash Player\*") do RD /S /Q "%%f"
+	for /D %%u in ("C:\Users\*") do for %%f In ("C:\Users\%%~nxu\AppData\Roaming\Adobe\Flash Player\*") do DEL /F /S /Q "%%f"
 
-	for /D %%u in ("C:\Users\*") do for /D %%f In ("C:\Users\%%~nxu\AppData\Roaming\Macromedia\Flash Player\*") do RD /S /Q "%%f"	&:: delete folders
-	for /D %%u in ("C:\Users\*") do for %%f In ("C:\Users\%%~nxu\AppData\Roaming\Macromedia\Flash Player\*") do DEL /F /S /Q "%%f"	&:: delete files
+	for /D %%u in ("C:\Users\*") do for /D %%f In ("C:\Users\%%~nxu\AppData\Roaming\Macromedia\Flash Player\*") do RD /S /Q "%%f"
+	for /D %%u in ("C:\Users\*") do for %%f In ("C:\Users\%%~nxu\AppData\Roaming\Macromedia\Flash Player\*") do DEL /F /S /Q "%%f"
 	exit /b
 
 :InstallFlash
