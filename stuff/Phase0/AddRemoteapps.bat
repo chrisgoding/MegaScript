@@ -2,14 +2,14 @@
 :: ADDREMOTEAPPS.BAT
 :: 
 :: Checks if you have a remoteapps connection 
-:: by looking for the Polk County (RADC) folder 
+:: by looking for the remoteapps folder 
 :: in the start menu.
 :: If the folder is not found, runs a powershell
 :: file that uses a .wcx file to automatically 
-:: set up the Polk County remote apps.
+:: set up your remote apps.
 ::
-:: email chrisgoding@polk-county.net with any
-:: concerns or suggestions
+:: If you got this on github, you need to make 
+:: your own .wcx file. Google it.
 :::::::::::::::::::::::::::::::::::::::::::::::::
 echo %userdomain% | find "<CHANGE THIS TO YOUR USERDOMAIN>"
 if %errorlevel%==1 ( goto eof )
