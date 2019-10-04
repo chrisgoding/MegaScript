@@ -1,0 +1,2 @@
+Everything in this folder is subject to change with no warning.
+If you care about it, don't put it here.
