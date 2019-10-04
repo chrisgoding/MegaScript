@@ -1,0 +1,4 @@
+This folder is for unsecured, general data of
+Polk County BoCC. Storage or retrival of
+financial, medical, personal, or sensative
+data is prohibited.
