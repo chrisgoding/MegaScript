@@ -5,7 +5,7 @@ set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemR
 @echo on
 
 set Zscaler.exe=Zscaler-windows-1.5.1.8-installer.exe
-set TrendUnloadPassword=<YourTrendUnloadPassword>
+set TrendUnloadPassword=TrendBoCC
 
 :checkforrunningtrend &:: if trend is already stopped, dont bother trying to disable trend
 	"%SystemPath%\tasklist.exe" /FI "imagename eq TMBMSRV.exe"|"%SystemPath%\find.exe" /I "TMBMSRV.exe"
@@ -18,11 +18,11 @@ set TrendUnloadPassword=<YourTrendUnloadPassword>
 	if %OS%==64BIT goto disabletrend64
 
 :disabletrend32
-	type trash.txt | "C:\Program Files\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %TrendUnloadPassword%
+	type enter.txt | "C:\Program Files\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %TrendUnloadPassword%
 	goto loop1
 
 :disabletrend64
-	type trash.txt | "C:\Program Files (x86)\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %TrendUnloadPassword%
+	type enter.txt | "C:\Program Files (x86)\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %TrendUnloadPassword%
 	goto loop1
 
 	:loop1
