@@ -1,8 +1,8 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: windows 10 upgrader and health checker.bat
 :: 
-:: Extract windows 10 iso(s) into a folder named 1809/1903/whatever the build number is
-:: Place this script one level up from the folder.
+:: Extract windows 10 iso(s) into folder(s) named 1809/1903/whatever the build number is
+:: Place this script one level up from the folder(s).
 ::
 :: Note that the script must be called with an option flag, the 3 acceptable ones are
 :: /Default
