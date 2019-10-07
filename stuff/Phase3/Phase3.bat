@@ -84,9 +84,8 @@ goto eof
 :7to10ReadinessCheck
 		if %1==/no7210 set upgrade=abort&&exit /b
 	:CheckOffice
-		IF exist "C:\program files\microsoft office\office16" ( goto modeldetect ) 
-		IF exist "C:\program files (x86)\microsoft office\office16" ( goto modeldetect ) ELSE ( cls&&echo YOU MUST UPGRADE OFFICE TO 2016 PRIOR TO UPGRADING WINDOWS TO 10. ) 
-		set upgrade=abort&&exit /b
+		IF exist "C:\program files\microsoft office\office14\outlook.exe" ( set upgrade=abort&&exit /b ) 
+		IF exist "C:\program files (x86)\microsoft office\office14\outlook.exe" ( set upgrade=abort&&exit /b )  
 
 	:ModelDetect &:: Determines what model the PC is. If it matches the whitelist, continue, otherwise go to end of file.
 		if %1==/ForceUpgrade goto UninstallConflicts
