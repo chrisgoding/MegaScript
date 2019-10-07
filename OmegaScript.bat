@@ -59,34 +59,6 @@ if %KACERUN%==True goto start
  if '%1'=='ELEV' (del "%vbsGetPrivileges%" 1>nul 2>nul  &  shift /1)
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-explorer "C:\IT Folder\MegaScript Progress Report"
-echo %computername% | find "IT-"
-if %errorlevel% NEQ 0 goto start
-
-:renamePC
-@echo off
-cls
-echo You need to rename this PC.
-start "" "C:\Program Files (x86)\Microsoft Office\Office16\excel.exe" "\\vboccfs02\IT_PCSupport\Documentation and Instructions\Computer-Name-Spreadsheets\Master All Computer Names.xlsx"
-echo If this is a BoCC computer, the naming scheme is as follows:
-echo (Computer type)(Division code)(Building Code)N(3 digit number)
-echo Computer type is a single character. Desktops = D, Laptops = L, Tablets = M, Virtual machines = V
-echo Division code is a two character code, which you should be able to look up in the PC naming spreadsheet (which opened in the background)
-echo The Building Code is a 5 digit number, which you should be able to look up in the PC naming spreadsheet (which opened in the background)
-echo The 3 digit number at the end is whichever number is available for use. The spreadsheet can provide guidance for this, but you should also check active directory and kace inventory to make sure that the name you want to use is not taken.
-echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
-echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
-echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
-echo Please type the name you would like to assign, then press enter.
-set /p newpcname=
-ping %newpcname% -n 1 | findstr "Reply"
-if %errorlevel%==0 goto renamePC
-
-WMIC computersystem where caption="%computername%" rename %newpcname%
-timeout 3 >nul
-shutdown -f -r -t 0
-
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 :start
 @echo off
@@ -106,7 +78,7 @@ setlocal enabledelayedexpansion
 IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysnative") ELSE (set "SystemPath=%SystemRoot%\System32")
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
-set logdirectory=\\vboccfs02\IT_SSM\Logs
+set logdirectory=\\SERVER\MEGASCRIPTSHARE\Logs
 if not exist "C:\IT Folder\Megascript Progress Report" mkdir "C:\IT Folder\Megascript Progress Report" >nul
 if not exist "%logdirectory%\%computername%" mkdir "%logdirectory%\%computername%" >nul
 
