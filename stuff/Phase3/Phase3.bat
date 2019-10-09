@@ -28,6 +28,7 @@ set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemR
 
 if not exist "C:\it folder\megascript progress report" mkdir "C:\it folder\megascript progress report"
 
+set installflag=%1 &:: for some reason I had to change the %1 to this variable to make things work
 Set TestingBuild=1903
 Set ProductionBuild=1809
 Set Windows10Key=<Your Windows 10 Key goes here>
@@ -82,15 +83,15 @@ goto eof
 	set upgrade=%ProductionBuild%&&exit /b
 
 :7to10ReadinessCheck
-		if %1==/no7210 set upgrade=abort&&exit /b
+		if %installflag% == /no7210 set upgrade=abort&&exit /b
 	:CheckOffice
-		IF exist "C:\program files\microsoft office\office14\outlook.exe" ( set upgrade=abort&&exit /b ) 
-		IF exist "C:\program files (x86)\microsoft office\office14\outlook.exe" ( set upgrade=abort&&exit /b )  
+		IF exist "C:\program files\microsoft office\office16" ( goto modeldetect ) 
+		IF exist "C:\program files (x86)\microsoft office\office16" ( goto modeldetect ) ELSE ( cls&&echo YOU MUST UPGRADE OFFICE TO 2016 PRIOR TO UPGRADING WINDOWS TO 10. ) 
+		set upgrade=abort&&exit /b
 
 	:ModelDetect &:: Determines what model the PC is. If it matches the whitelist, continue, otherwise go to end of file.
-		if %1==/ForceUpgrade goto UninstallConflicts
-	    setlocal enableextensions disabledelayedexpansion
-
+		if %installflag% == /ForceUpgrade goto UninstallConflicts
+	  
 	    for /f "tokens=2 delims==" %%a in (
 	        'wmic computersystem get model /value'
 	    ) do for /f "delims=" %%b in ("%%~a") do for %%m in (
