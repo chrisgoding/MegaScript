@@ -79,9 +79,16 @@ IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysn
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
 set logdirectory=\\SERVER\MEGASCRIPTSHARE\Logs
+set ITRepShare=\\A_Server_in_the_IT_VLAN\megascript
+set ITGateway=<the default gateway of the IT VLAN>
 if not exist "C:\IT Folder\Megascript Progress Report" mkdir "C:\IT Folder\Megascript Progress Report" >nul
 if not exist "%logdirectory%\%computername%" mkdir "%logdirectory%\%computername%" >nul
 
+ipconfig > "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+find "%ITGateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+if %errorlevel%==0 ( set workingdirectory=%ITRepShare% ) else ( set workingdirectory=%~dp0% )
+
+IF "%~1" == "" goto FixFlag
 
 if %KACERUN%==True goto ModeSelectKace
 if %KACERUN%==False goto ModeSelectManual
@@ -186,6 +193,21 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Chrome
 	goto eof
 
+:FixFlag
+timeout 1 >nul
+Echo Type which run you want. pico, mini, mega, or ultra
+set /p Action=
+if %Action%==pico echo Running PicoScript&&goto RunPico
+if %Action%==mini echo Running MiniScript&&goto RunMini
+if %Action%==mega echo Running MegaScript&&goto RunManualMega
+if %Action%==ultra echo Running UltraScript&&goto RunManualUltra
+echo input not recognized, please try again
+goto FixFlag
+
+:::::::::::::
+::FUNCTIONS::
+:::::::::::::
+
 :BatteryCheck
 	WMIC Path Win32_Battery Get BatteryStatus | find "1"
 	if %errorlevel%==0 @echo off && cls && echo Running on battery power. Please plug in a power adapter when running the megascript. && timeout 30 >nul && goto eof
@@ -248,13 +270,13 @@ if %KACERUN%==False goto ModeSelectManual
 
 :Phase5Quick
 	call :StartPhase
-	call stuff\phase5\quickchanges.bat > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
+	call stuff\phase5\Windows10Changes.bat /quick > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
 	call :EndPhase
 	exit /b
 
 :Phase5Long
 	call :StartPhase
-	call stuff\phase5\changes.bat > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
+	call stuff\phase5\Windows10Changes.bat /full > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
 	call :EndPhase
 	exit /b
 
@@ -300,7 +322,7 @@ if %KACERUN%==False goto ModeSelectManual
 
 :StartPhase
 	call :GetTime
-	pushd "%~dp0"
+	pushd %workingdirectory%
 	exit /b
 
 :EndPhase
