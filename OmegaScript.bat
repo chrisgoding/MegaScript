@@ -79,13 +79,13 @@ IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysn
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
 set logdirectory=\\SERVER\MEGASCRIPTSHARE\Logs
-set ITRepShare=\\A_Server_in_the_IT_VLAN\megascript
-set ITGateway=<the default gateway of the IT VLAN>
+set RepShare=\\A_Server_in_the_Remote_VLAN\megascript
+set RemoteGateway=<the default gateway of the Remote VLAN>
 if not exist "C:\IT Folder\Megascript Progress Report" mkdir "C:\IT Folder\Megascript Progress Report" >nul
 if not exist "%logdirectory%\%computername%" mkdir "%logdirectory%\%computername%" >nul
 
 ipconfig > "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-find "%ITGateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+find "%RemoteGateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
 if %errorlevel%==0 ( set workingdirectory=%ITRepShare% ) else ( set workingdirectory=%~dp0% )
 
 IF "%~1" == "" goto FixFlag
