@@ -35,6 +35,7 @@ set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemR
 
 if not exist "C:\it folder\megascript progress report" mkdir "C:\it folder\megascript progress report"
 
+set upgrade=TBD
 set TrendVersion=12.0.5383
 set installflag=%1 &:: for some reason I had to change the %1 to this variable to make things work
 Set TestingBuild=1903
@@ -77,6 +78,7 @@ goto eof
 	exit /b
 
 :Win10BuildCheck &:: makes sure you're not running 1809 or higher already
+	if %upgrade%==abort exit /b
 	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "%TestingBuild%" >NUL
 	if %errorlevel%==0 set upgrade=uptodate&&exit /b
 	echo %computername% | "%SystemPath%\find.exe" /i "DIT01500"
@@ -99,14 +101,15 @@ goto eof
 	exit /b
 
 :7to10ReadinessCheck
+	if %upgrade%==abort exit /b
 	if %installflag% == /no7210 set upgrade=abort&&exit /b
 	if exist "C:\IT Folder\megascript progress report\*attempting windows 7-10 upgrade.txt" ( del "C:\IT Folder\megascript progress report\*attempting windows 7-10 upgrade.txt" /F /Q&&set upgrade=abort&&exit /b )
 	Call :CheckGal
 	if %GAL%==False ( Call :CheckOffice )
 	if %installflag% == /Default ( Call :ModelDetect )
 	if %installflag% == /ForceUpgrade ( Call :UninstallConflicts )
-	if %upgrade% NEQ abort ( Call :ReadyForUpgrade ) else ( exit /b )
-	exit /b 
+	if %upgrade% NEQ abort ( Call :ReadyForUpgrade ) else (exit /b )
+	exit /b
 
 	:CheckGAL &:: GAL computers don't have office installed, so this block skips the office check for GAL PC's
 		echo %computername% | "%SystemPath%\find.exe" /i "DGL"
@@ -118,7 +121,7 @@ goto eof
 
 	:CheckOffice
 		IF exist "C:\program files\microsoft office\office16" ( exit /b ) 
-		IF exist "C:\program files (x86)\microsoft office\office16" ( exit /b ) ELSE ( set upgrade=abort&&exit /b ) 
+		IF exist "C:\program files (x86)\microsoft office\office16" ( exit /b ) ELSE ( set upgrade=abort&&exit /b )  
 	
 	:ModelDetect &:: Determines what model the PC is. If it matches the whitelist, continue, otherwise go to end of file.
 		if %installflag% == /ForceUpgrade exit /b
@@ -156,6 +159,8 @@ goto eof
 		exit /b
 
 	:ReadyForUpgrade
+		for /D %%u in ("C:\Users\*") do copy "Windows 10 Quick Reference Guide.pdf" "%%u\Desktop\"
+		del "C:\users\public\desktop\Windows 10 Quick Reference Guide.pdf" /f /s /q
 		Call :GetTime
 		Echo attempting windows 7-10 upgrade > "C:\it folder\megascript progress report\!today!_!now! attempting windows 7-10 upgrade.txt"
 		echo %upgrade% will be installed && exit /b
@@ -185,7 +190,7 @@ goto eof
 
 	:PerformUpgrade
 		"C:\windows\regedit.exe" /s Disable_Open-File_Security_Warning.reg
-		start /wait %upgrade%\setup.exe /Auto upgrade /pkey %Windows10Key% /DynamicUpdate disable /compat ignorewarning /installfrom %InstallPath%\%upgrade%\sources\install.wim
+		start /wait %upgrade%\setup.exe /Auto upgrade /pkey %Windows10Key% /DynamicUpdate disable /compat ignorewarning /installfrom %cd%\%upgrade%\sources\install.wim
 
 		Call :GetTime
 		Echo Upgraded Windows > "C:\it folder\megascript progress report\!today!_!now! upgraded windows to %windowsversion%.txt"
