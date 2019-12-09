@@ -89,6 +89,7 @@ goto eof
 	exit /b
 
 :DesktopBackground
+	if not exist img0.jpg exit /b
 	"%SystemPath%\takeown.exe" /f c:\windows\WEB\wallpaper\Windows\img0.jpg
 	"%SystemPath%\takeown.exe" /f C:\Windows\Web\4K\Wallpaper\Windows\*.*
 	"%SystemPath%\icacls.exe" c:\windows\WEB\wallpaper\Windows\img0.jpg /Grant System:(F)
