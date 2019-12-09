@@ -344,19 +344,19 @@ ECHO %batchName% Arguments: P1=%1
 
 :Phase6Quick
 	call :StartPhase
-	call stuff\phase6\quickcleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
+	call stuff\phase6\cleanup.bat /Quick > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
 :Phase6Medium
 	call :StartPhase
-	call stuff\phase6\cleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
+	call stuff\phase6\cleanup.bat /Medium > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
 :Phase6Ultra
 	call :StartPhase
-	call stuff\phase6\ultracleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
+	call stuff\phase6\cleanup.bat /Full > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
