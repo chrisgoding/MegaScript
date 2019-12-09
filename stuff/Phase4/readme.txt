@@ -14,3 +14,4 @@ etc
 Why does this step need to exist? If you're using kace patching, the PC's should already have the windows updates, and this won't do anything..
 ..in theory. In practice, laptops that are consistently offline during the patch window can be missing all of the patches.
 I've seen this phase push over 80 updates to a laptop before.
+Anyway, sometimes a win10 upgrade will fail on a PC that's missing patches, so this can help a lot with improving your win10 deployment numbers.
