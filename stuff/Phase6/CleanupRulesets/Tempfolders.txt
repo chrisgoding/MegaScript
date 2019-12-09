@@ -1,0 +1,31 @@
+C:\AMD
+C:\empty
+C:\HPSDM
+C:\Intel
+C:\IT Folder\Adobe Reader 11 - Run  the Install.bat
+C:\IT Folder\Citrix Web Plugin
+C:\IT Folder\CutePDF
+C:\IT Folder\CutePDF&GhostScript
+C:\IT Folder\Flash
+C:\IT Folder\Google Chrome
+C:\IT Folder\GoogleEarthProWin7.0 - Use this one
+C:\IT Folder\Java
+C:\IT Folder\MS Office 2010
+C:\IT Folder\Silverlight5
+C:\IT Folder\Software\Zscaler App
+C:\IT Folder\Updated WSUS
+C:\IT Folder\WSUS
+C:\IT Folder\WSUS reg entry
+C:\IT Folder\Zscaler App
+C:\NVIDIA
+C:\PerfLogs
+C:\ProgramData\Dell\KACE
+C:\ProgramData\HP\MsiCache\HP Velocity
+C:\ProgramData\HP\HP SoftPaq Download Manager\SWDownload
+C:\ProgramData\Quest\KACE\Downloads
+C:\Program Files\HP\HP Velocity
+C:\SoftPaqDownloadDirectory
+C:\swsetup
+C:\users\public\desktop\Windows 7 training
+C:\Win7Train
+C:\WSUS reg entry

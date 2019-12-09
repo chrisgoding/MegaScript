@@ -1,0 +1,9 @@
+AdobeArmservice
+AdobeFlashPlayerUpdatesvc
+AdobeFlashPlayerUpdateSvc
+ForensiTAppxService
+gupdate
+gupdatem
+ipqservice
+lanwlanswitchingservice
+WMPNetworkSvc

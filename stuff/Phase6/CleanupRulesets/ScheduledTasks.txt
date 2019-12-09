@@ -1,0 +1,7 @@
+Adobe Acrobat Update Task
+Adobe Flash Player NPAPI Notifier
+Adobe Flash Player PPAPI Notifier
+Adobe Flash Player Updater
+GoogleUpdateTaskMachineCore
+GoogleUpdateTaskMachineUA
+OneDrive Standalone Update Task v2

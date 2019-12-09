@@ -1,0 +1,3 @@
+AdobeAcroOutlook.SendAsLink
+OneNote.OutlookAddin
+OscAddin.Connect

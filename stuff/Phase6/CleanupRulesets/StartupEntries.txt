@@ -1,0 +1,7 @@
+Acrobat Assistant 8.0
+AdobeAAMUpdater-1.0
+ConnectionCenter
+HotKeysCmds
+igfxtray
+Redirector
+SunJavaUpdateSched
