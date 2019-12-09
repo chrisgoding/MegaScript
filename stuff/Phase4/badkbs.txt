@@ -1,0 +1,4 @@
+wsus\w61\glb\windows6.1-kb2552343
+wsus\w61-x64\glb\windows6.1-kb2506014
+wsus\w61-x64\glb\windows6.1-kb2552343
+wsus\w61-x64\glb\windows6.1-kb3018238
