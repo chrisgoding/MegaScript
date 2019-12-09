@@ -46,6 +46,7 @@ call :SetLaptoporDesktop
 call :WindowsVersion
 call :PowerScheme
 call :DisableTrend
+call :LANWLANSwitcher
 call :FixBootSettings
 call :AddITFiles
 call :LaptopStuff
@@ -190,6 +191,10 @@ goto eof
 		:waitfor15
 			timeout 15 >nul
 			goto checkforrunningtrend
+	exit /b
+
+:LANWLANSwitcher
+	if not exist "C:\Program Files\WLANManager" ( "%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -executionpolicy bypass -file WLANManager.ps1 -Install:System )
 	exit /b
 
 :FixBootSettings
