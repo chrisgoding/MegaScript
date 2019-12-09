@@ -1,4 +1,6 @@
-Download wsusoffline and build the repo. I prefer to build the repo the day before patch tuesday, microsoft usually has all the bugs worked out by then. The directory structure should look like
+Download wsusoffline and build the repo. I prefer to build the repo the day before patch tuesday, microsoft usually has all the bugs worked out by then.
+Running copyrepo.bat should build it into the server properly
+The directory structure should look like
 \\<server>\MegaScript\stuff\Phase4\wsus:
 bin
 cmd
