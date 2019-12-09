@@ -1,8 +1,6 @@
 setlocal enabledelayedexpansion
-echo %cd% | find "KACE"
-if %errorlevel%==0 ( set KACERUN=True ) else (set KACERUN=False )
-
-if %KACERUN%==True goto start
+Call :IsKace
+if %KACERUN%==True goto Elevated
 ::::::::::::::::::::::::::::::::::::::::::::
 :: Elevate.cmd - Version 4
 :: Automatically check & get admin rights
@@ -59,66 +57,145 @@ if %KACERUN%==True goto start
  if '%1'=='ELEV' (del "%vbsGetPrivileges%" 1>nul 2>nul  &  shift /1)
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Elevated
+set RunType="%~1"
+Call :RenamePC
+Call :SetVars
+Call :RunType
+Call :FindRepShare
+Call :ShowProgress
+Call :PerformScript
+goto eof
 
-:start
-@echo off
-cls
-echo.
-echo _______________________________________________________________________________
-echo To see script progress, please pay attention to 
-echo C:\IT Folder\Megascript Progress Report and sort the contents by date modified.
-echo.
-echo Most errors in this are safe to ignore, but if you're concerned, take a 
-echo screenshot and email it to chrisgoding@polk-county.net, along with your PC 
-echo name, so that I can find the log file.
-echo _______________________________________________________________________________
+:::::::::::::
+::FUNCTIONS::
+:::::::::::::
 
-pushd "%~dp0"
-setlocal enabledelayedexpansion
-IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysnative") ELSE (set "SystemPath=%SystemRoot%\System32")
-set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
+:IsKace
+	echo %cd% | find "KACE"
+	if %errorlevel%==0 ( set KACERUN=True ) else (set KACERUN=False )
+	exit /b
 
-set logdirectory=\\SERVER\MEGASCRIPTSHARE\Logs
-set RepShare=\\A_Server_in_the_Remote_VLAN\megascript
-set RemoteGateway=<the default gateway of the Remote VLAN>
-if not exist "C:\IT Folder\Megascript Progress Report" mkdir "C:\IT Folder\Megascript Progress Report" >nul
-if not exist "%logdirectory%\%computername%" mkdir "%logdirectory%\%computername%" >nul
+:RenamePC
+	if %KACERUN%==True exit /b
+	::we had some interns trying to run the script on computers that hadnt been named yet, this is some handholding to get them to do things our way
+	::"IT-" is the prefix applied to a PC during the imaging process in our environment
+	echo %computername% | find "IT-"
+	if %errorlevel% NEQ 0 exit /b
+	@echo off
+	cls
+	echo You need to rename this PC.
+	echo If this is a BoCC computer, the naming scheme is as follows:
+	echo (Computer type)(Division code)(Building Code)N(3 digit number)
+	echo Computer type is a single character. Desktops = D, Laptops = L, Tablets = M, Virtual machines = V
+	echo Division code is a two character code, which you should be able to look up in the PC naming spreadsheet
+	echo The Building Code is a 5 digit number, which you should be able to look up in the PC naming spreadsheet
+	echo The 3 digit number at the end is whichever number is available for use. The spreadsheet can provide guidance for this, but you should also check active directory and kace inventory to make sure that the name you want to use is not taken.
+	echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
+	echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
+	echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
+	echo Please type the name you would like to assign, then press enter.
+	set /p newpcname=
+	ping %newpcname% -n 1 | findstr "Reply"
+	if %errorlevel%==0 goto renamePC
+	WMIC computersystem where caption="%computername%" rename %newpcname%
+	timeout 3 >nul
+	shutdown -f -r -t 0
 
-ipconfig > "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-find "%RemoteGateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-if %errorlevel%==0 ( set workingdirectory=%ITRepShare% ) else ( set workingdirectory=%~dp0% )
+:SetVars
+ECHO %batchName% Arguments: P1=%1
+	@echo on
+	pushd "%~dp0"
+	IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysnative") ELSE (set "SystemPath=%SystemRoot%\System32")
+	set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
+	set NetworkLogDirectory=\\<yourserver>\MegaScript\Logs
+	set LocalLogDirectory="C:\IT Folder\Megascript Progress Report"
+	::the below are examples, change as needed
+	set VLAN1Share=\\reppc1\megascript
+	set VLAN1Gateway=10.0.0.1
+	set VLAN2Share=\\reppc2\megascript
+	set VLAN2Gateway=10.0.1.1
+	set VLAN3Share=\\reppc3\megascript
+	set VLAN3Gateway=10.0.2.1
+	if not exist %locallogdirectory% mkdir %LocalLogDirectory% >nul
+	if not exist "%NetworkLogDirectory%\%computername%" mkdir "%NetworkLogDirectory%\%computername%" >nul
+	exit /b
 
-IF "%~1" == "" goto FixFlag
+:FindRepShare
+	ipconfig /all > "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+	find "VLAN1Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+	if %errorlevel%==0 (set workingdirectory=%ITRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
+	find "%VLAN2Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+	if %errorlevel%==0 (set workingdirectory=%WRMRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
+	find "%VLAN3Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+	if %errorlevel%==0 (set workingdirectory=%UTAdminRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
+	echo Running script from %workingdirectory% 
+	exit /b
 
-if %KACERUN%==True goto ModeSelectKace
-if %KACERUN%==False goto ModeSelectManual
+:RunType
+	if %RunType% NEQ "" exit /b
+	:FixFlag
+		timeout 1 >nul
+		Echo Type which run you want. Pico, Mini, Mega, or Ultra
+		set /p RunType1=
+		set Runtype="/%RunType1%"
+		if %RunType%=="/Pico" echo Running PicoScript&&exit /b
+		if %RunType%=="/Mini" echo Running MiniScript&&exit /b
+		if %RunType%=="/Mega" echo Running MegaScript&&exit /b
+		if %RunType%=="/Ultra" echo Running UltraScript&&exit /b
+		echo input not recognized, please try again
+		goto FixFlag
+
+:ShowProgress
+	if %KACERUN%==True exit /b
+	explorer %LocalLogDirectory%
+	@echo off
+	cls
+	echo.
+	echo _______________________________________________________________________________
+	echo To see script progress, please pay attention to 
+	echo C:\IT Folder\Megascript Progress Report and sort the contents by date modified.
+	echo.
+	echo Most errors in this are safe to ignore, but if you're concerned, take a 
+	echo screenshot and email it to chrisgoding@polk-county.net, along with your PC 
+	echo name, so that I can find the log file.
+	echo _______________________________________________________________________________
+	@echo on
+	exit /b
+
+:PerformScript
+	if %KACERUN%==True Call :ModeSelectKace
+	if %KACERUN%==False Call :ModeSelectManual
+	exit /b
 
 :ModeSelectKace
-	IF %1==/Pico goto RunPico
-	IF %1==/Mini goto RunMini
-	IF %1==/Mega goto RunKaceMega
-	IF %1==/Ultra goto RunKaceUltra
+	IF %RunType%=="/Pico" Call :RunPico
+	IF %RunType%=="/Mini" Call :RunMini
+	IF %RunType%=="/Mega" Call :RunKaceMega
+	IF %RunType%=="/Ultra" Call :RunKaceUltra
+	exit /b
 
 :ModeSelectManual
-	IF %1==/Pico goto RunPico
-	IF %1==/Mini goto RunMini
-	IF %1==/Mega goto RunManualMega
-	IF %1==/Ultra goto RunManualUltra
+	IF %RunType%=="/Pico" Call :RunPico
+	IF %RunType%=="/Mini" Call :RunMini
+	IF %RunType%=="/Mega" Call :RunManualMega
+	IF %RunType%=="/Ultra" Call :RunManualUltra
+	exit /b
 
 :RunPico
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! PicoScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! PicoScript initiated by %username%.txt"
 	call :Phase0
 	call :Phase1
 	call :Phase5Quick
 	call :Phase6Quick
 	call :EndPico
 	"%SystemPath%\shutdown.exe" -a
-	goto eof
+	exit /b
 
 :RunMini
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! MiniScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! MiniScript initiated by %username%.txt"
 	call :BatteryCheck
 	call :Phase0
 	call :Phase1
@@ -127,11 +204,11 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Phase6Quick
 	call :Phase7
 	call :Chrome
-	goto eof
+	exit /b
 
 :RunKaceMega
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! MegaScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! MegaScript initiated by %username%.txt"
 	call :BatteryCheck
 	call :Phase0
 	call :Phase1
@@ -143,11 +220,11 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Phase6Ultra
 	call :Phase7
 	call :Chrome
-	goto eof
+	exit /b
 
 :RunManualMega
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! MegaScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! MegaScript initiated by %username%.txt"
 	call :BatteryCheck
 	call :Phase0
 	call :Phase1
@@ -159,11 +236,11 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Phase6Medium
 	call :Phase7
 	call :Chrome
-	goto eof
+	exit /b
 
 :RunKaceUltra
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! UltraScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! UltraScript initiated by %username%.txt"
 	call :BatteryCheck
 	call :Phase0
 	call :Phase1
@@ -175,11 +252,11 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Phase6Ultra
 	call :Phase7
 	call :Chrome
-	goto eof
+	exit /b
 
 :RunManualUltra
 	call :GetTime
-	echo %username% > "C:\IT Folder\Megascript progress report\!today!_!now! UltraScript initiated by %username%.txt
+	echo %username% > %LocalLogDirectory%"\!today!_!now! UltraScript initiated by %username%.txt"
 	call :BatteryCheck
 	call :Phase0
 	call :Phase1
@@ -191,22 +268,7 @@ if %KACERUN%==False goto ModeSelectManual
 	call :Phase6Ultra
 	call :Phase7
 	call :Chrome
-	goto eof
-
-:FixFlag
-timeout 1 >nul
-Echo Type which run you want. pico, mini, mega, or ultra
-set /p Action=
-if %Action%==pico echo Running PicoScript&&goto RunPico
-if %Action%==mini echo Running MiniScript&&goto RunMini
-if %Action%==mega echo Running MegaScript&&goto RunManualMega
-if %Action%==ultra echo Running UltraScript&&goto RunManualUltra
-echo input not recognized, please try again
-goto FixFlag
-
-:::::::::::::
-::FUNCTIONS::
-:::::::::::::
+	exit /b
 
 :BatteryCheck
 	WMIC Path Win32_Battery Get BatteryStatus | find "1"
@@ -215,100 +277,99 @@ goto FixFlag
 
 :Phase0
 	call :StartPhase
-	call stuff\phase0\phase0.bat > "C:\it folder\megascript progress report\!today!_!now! phase 0.txt"
+	call stuff\phase0\phase0.bat > %LocalLogDirectory%"\!today!_!now! phase 0.txt"
 	call :EndPhase
 	exit /b
 
 :Phase1
 	call :StartPhase
-	call stuff\phase1\uninstaller.bat > "C:\it folder\megascript progress report\!today!_!now! phase 1.txt"
+	call stuff\phase1\uninstaller.bat > %LocalLogDirectory%"\!today!_!now! phase 1.txt"
 	call :EndPhase
 	exit /b
 
 :Phase2
 	call :StartPhase
 	Echo "Access denied" errors are normal when flash is being updated and are safe to ignore.
-	call stuff\phase2\softwareupdater.bat > "C:\it folder\megascript progress report\!today!_!now! phase 2.txt"
+	call stuff\phase2\softwareupdater.bat > %LocalLogDirectory%"\!today!_!now! phase 2.txt"
 	call :EndPhase
 	exit /b
 
 :Phase2.5
 	call :StartPhase
-	call stuff\phase2.5\Install.bat > "C:\it folder\megascript progress report\!today!_!now! phase 2.5.txt"
+	call stuff\phase2.5\Install.bat > %LocalLogDirectory%"\!today!_!now! phase 2.5.txt"
 	call :EndPhase
 	exit /b
 
 :Phase3No7210
 	call :StartPhase
-	call stuff\Phase3\phase3.bat /no7210 > "C:\it folder\megascript progress report\!today!_!now! phase 3.txt"
+	call stuff\Phase3\phase3.bat /no7210 > %LocalLogDirectory%"\!today!_!now! phase 3.txt"
 	call :EndPhase
 	exit /b
 
 :Phase3KaceUltra
 	call :StartPhase
-	call stuff\Phase3\phase3.bat /Default > "C:\it folder\megascript progress report\!today!_!now! phase 3.txt"
+	call stuff\Phase3\phase3.bat /Default > %LocalLogDirectory%"\!today!_!now! phase 3.txt"
 	call :EndPhase
 	exit /b
 
 :Phase3ManualUltra
 	call :StartPhase
-	call stuff\Phase3\phase3.bat /ForceUpgrade > "C:\it folder\megascript progress report\!today!_!now! phase 3.txt"
+	call stuff\Phase3\phase3.bat /ForceUpgrade > %LocalLogDirectory%"\!today!_!now! phase 3.txt"
 	call :EndPhase
 	exit /b
 
 :Phase4Kace
 	call :StartPhase
-	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatercerts /monitoron > "C:\it folder\megascript progress report\!today!_!now! phase 4.txt"
+	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatercerts /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
 	call :EndPhase
 	exit /b
 
 :Phase4Manual
 	call :StartPhase
-	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatetsc /updatercerts /updatecpp /monitoron > "C:\it folder\megascript progress report\!today!_!now! phase 4.txt"
+	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatetsc /updatercerts /updatecpp /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
 	call :EndPhase
 	exit /b
 
 :Phase5Quick
 	call :StartPhase
-	call stuff\phase5\Windows10Changes.bat /quick > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
+	call stuff\phase5\Windows10Changes.bat /quick > %LocalLogDirectory%"\!today!_!now! phase 5.txt"
 	call :EndPhase
 	exit /b
 
 :Phase5Long
 	call :StartPhase
-	call stuff\phase5\Windows10Changes.bat /full > "C:\it folder\megascript progress report\!today!_!now! phase 5.txt"
+	call stuff\phase5\Windows10Changes.bat /full > %LocalLogDirectory%"\!today!_!now! phase 5.txt"
 	call :EndPhase
 	exit /b
 
 :Phase6Quick
 	call :StartPhase
-	call stuff\phase6\quickcleanup.bat > "C:\it folder\megascript progress report\!today!_!now! phase 6.txt"
+	call stuff\phase6\quickcleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
 :Phase6Medium
 	call :StartPhase
-	call stuff\phase6\cleanup.bat > "C:\it folder\megascript progress report\!today!_!now! phase 6.txt"
+	call stuff\phase6\cleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
 :Phase6Ultra
 	call :StartPhase
-	call stuff\phase6\ultracleanup.bat > "C:\it folder\megascript progress report\!today!_!now! phase 6.txt"
+	call stuff\phase6\ultracleanup.bat > %LocalLogDirectory%"\!today!_!now! phase 6.txt"
 	call :EndPhase
 	exit /b
 
 :EndPico
 	call :StartPhase
 	pushd stuff\phase7
-	call disablewifi.bat
-	call postssm.bat > "C:\it folder\megascript progress report\!today!_!now! phase 7.txt"
+	call postssm.bat > %LocalLogDirectory%"\!today!_!now! phase 7.txt"
 	call :EndPhase
 	exit /b
 
 :Phase7
 	call :StartPhase
-	call stuff\phase7\ssm.bat > "C:\it folder\megascript progress report\!today!_!now! phase 7.txt"
+	call stuff\phase7\Phase7.bat > %LocalLogDirectory%"\!today!_!now! phase 7.txt"
 	call :EndPhase
 	exit /b
 
@@ -321,13 +382,17 @@ goto FixFlag
 	exit /b
 
 :StartPhase
+	if not exist %workingdirectory% set workingdirectory=%~dp0%
+	pushd "%workingdirectory%"
+	echo %cd% | find "C:\Windows\System32"
+	if %errorlevel% == 0 goto StartPhase
 	call :GetTime
-	pushd %workingdirectory%
 	exit /b
 
 :EndPhase
-	if exist "%logdirectory%\%computername%" ( "%SystemPath%\robocopy.exe" "C:\it folder\megascript progress report" "%logdirectory%\%computername%" /mir >nul )
-	popd
+	echo %cd% | "%SystemPath%\find.exe" "C:\Windows\System32"
+	if %errorlevel% NEQ 0 popd && goto EndPhase
+	if exist "%NetworkLogDirectory%\%computername%" ( "%SystemPath%\robocopy.exe" %LocalLogDirectory% "%NetworkLogDirectory%\%computername%" /mir >nul )
 	exit /b
 
 :GetTime
@@ -338,7 +403,7 @@ goto FixFlag
 	exit /b
 
 :eof
-	call :GetTime!
-	Echo Done! > "C:\it folder\megascript progress report\!today!_!now! script run complete.txt"
+	call :GetTime
+	Echo Done! > %LocalLogDirectory%"\!today!_!now! script run complete.txt"
 	call :EndPhase
 	endlocal
