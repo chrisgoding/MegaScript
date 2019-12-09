@@ -2,6 +2,10 @@
 :: windows 10 upgrader and health checker.bat
 ::
 :: Changelog
+:: 12/9/19
+::		 - All the goto eof's are exit /b's; the whole script's been functionized
+::		 - 1909 support! Create a file "C:\IT Folder\GIVEMEUPDATES.txt" to get it on the next run
+::		 - I can't remember when I added it but it has an "every other run" feature to keep it from getting stuck in a loop of trying to run the in-place upgrade; that way on the next megascript run it'll skip it and be able to check for windows/driver updates
 :: 10/14/19	 - Various missing parentheses fixed. 
 ::		 - redundant setlocal in the win7readinesscheck function removed.
 ::		 - added "setupgrade=abort&&" to every "goto eof" that occurs before the performupgrade function, in case
@@ -27,6 +31,7 @@
 ::
 :: Please rerun the megascript after an upgrade to decrapify and add .net 3.5, drivers, and software that was uninstalled.
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 pushd "%~dp0"
 setlocal enabledelayedexpansion
 IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysnative") ELSE (set "SystemPath=%SystemRoot%\System32")
@@ -38,11 +43,13 @@ if not exist "C:\it folder\megascript progress report" mkdir "C:\it folder\megas
 set upgrade=TBD
 set TrendVersion=12.0.5383
 set installflag=%1 &:: for some reason I had to change the %1 to this variable to make things work
+Set BETABuild=1909
 Set TestingBuild=1903
 Set ProductionBuild=1809
-Set Windows10Key=<YOUR WINDOWS 10 KEY HERE>
-Set InstallPath=\\<SERVER>\<MegaScript Share>\stuff\Phase3
+Set Windows10Key=<your key goes here>
+::Set InstallPath=\\<server>\MegaScript\stuff\Phase3
 
+call :ExcludePublicSafety
 Call :BitnessCheck
 	if %OS% == 32BIT set upgrade=abort&&goto eof
 Call :TrendVersionCheck
@@ -62,6 +69,33 @@ goto eof
 ::FUNCTIONS::
 :::::::::::::
 
+:ExcludePublicSafety &:: we don't want to run certain steps on certain PC's, so we set a flag here based on the PC name.
+	echo %computername% | "%SystemPath%\find.exe" /i "PUBLICSAFETY"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BENCH"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BLS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BRICE"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "EOC"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "EM"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "FIRE"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "FR"
+	if %errorlevel%==0 ( set PublicSafety==True && exit /b ) else ( set PublicSafety==False )
+	echo %computername% | "%SystemPath%\find.exe" /i "GAS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "RS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "SU"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "TOUGH"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	exit /b
+
 :GetTime
 	set today=!date:/=-!
 	set now=!time::=-!
@@ -73,12 +107,24 @@ goto eof
 	"%SystemPath%\reg.exe" Query "HKLM\Hardware\Description\System\CentralProcessor\0" | "%SystemPath%\find.exe" /i "x86" > NUL&&set OS=32BIT || set OS=64BIT
 	exit /b	
 
+:TrendVersionCheck
+	"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" | "%SystemPath%\find.exe" "Trend" >NUL
+	if %errorlevel% NEQ 0 exit /b
+	"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
+	if %errorlevel%==0 exit /b
+	"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
+	if %errorlevel% NEQ 0 (echo Trend Needs to be uninstalled and reinstalled > "C:\it folder\megascript progress report\Trend is too out of date to install windows 10.txt" && set upgrade=abort )
+	exit /b
+
 :WindowsVersion &:: from https://stackoverflow.com/a/13212116
 	for /f "tokens=4-5 delims=. " %%i in ('ver') do set VERSION=%%i.%%j
 	exit /b
 
 :Win10BuildCheck &:: makes sure you're not running 1809 or higher already
 	if %upgrade%==abort exit /b
+	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "%BETABuild%" >NUL
+	if %errorlevel%==0 set upgrade=uptodate&&exit /b
+	if exist "C:\IT Folder\GIVEMEUPDATES.txt" set upgrade=%BETABuild%&&exit /b
 	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "%TestingBuild%" >NUL
 	if %errorlevel%==0 set upgrade=uptodate&&exit /b
 	echo %computername% | "%SystemPath%\find.exe" /i "DIT01500"
@@ -93,14 +139,8 @@ goto eof
 	Echo attempting windows 10 in-place upgrade > "C:\it folder\megascript progress report\!today!_!now! attempting windows 10 in-place upgrade.txt"
 	set upgrade=%ProductionBuild%&&exit /b
 
-:TrendVersionCheck
-	reg query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
-	if %errorlevel%==0 exit /b
-	reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
-	if %errorlevel% NEQ 0 (echo Trend Needs to be uninstalled and reinstalled > "C:\it folder\megascript progress report\Trend is too out of date to install windows 10.txt" && set upgrade=abort )
-	exit /b
-
 :7to10ReadinessCheck
+	if %PublicSafety%==True set upgrade=abort&&exit /b
 	if %upgrade%==abort exit /b
 	if %installflag% == /no7210 set upgrade=abort&&exit /b
 	if exist "C:\IT Folder\megascript progress report\*attempting windows 7-10 upgrade.txt" ( del "C:\IT Folder\megascript progress report\*attempting windows 7-10 upgrade.txt" /F /Q&&set upgrade=abort&&exit /b )
@@ -109,7 +149,7 @@ goto eof
 	if %installflag% == /Default ( Call :ModelDetect )
 	if %installflag% == /ForceUpgrade ( Call :UninstallConflicts )
 	if %upgrade% NEQ abort ( Call :ReadyForUpgrade ) else (exit /b )
-	exit /b
+	exit /b 
 
 	:CheckGAL &:: GAL computers don't have office installed, so this block skips the office check for GAL PC's
 		echo %computername% | "%SystemPath%\find.exe" /i "DGL"
@@ -121,7 +161,7 @@ goto eof
 
 	:CheckOffice
 		IF exist "C:\program files\microsoft office\office16" ( exit /b ) 
-		IF exist "C:\program files (x86)\microsoft office\office16" ( exit /b ) ELSE ( set upgrade=abort&&exit /b )  
+		IF exist "C:\program files (x86)\microsoft office\office16" ( exit /b ) ELSE ( set upgrade=abort&&exit /b ) 
 	
 	:ModelDetect &:: Determines what model the PC is. If it matches the whitelist, continue, otherwise go to end of file.
 		if %installflag% == /ForceUpgrade exit /b
@@ -129,7 +169,7 @@ goto eof
 		    for /f "tokens=2 delims==" %%a in (
 		        'wmic computersystem get model /value'
 		    ) do for /f "delims=" %%b in ("%%~a") do for %%m in (
-		        "HP ProDesk 600 G1" "HP ProDesk 600 G1 DM" "HP ProDesk 600 G1 SFF" "HP ProDesk 600 G2 DM" "HP ProDesk 600 G2 SFF" "HP ProDesk 600 G3 DM" "HP ProDesk 600 G4 DM" "HP ProDesk 600 G4 DM (TAA)" "HP EliteBook 820 G3"
+		        "HP ProBook 650 G2" "HP ProDesk 600 G1" "HP ProDesk 600 G1 DM" "HP ProDesk 600 G1 SFF" "HP ProDesk 600 G2 DM" "HP ProDesk 600 G2 SFF" "HP ProDesk 600 G3 DM" "HP ProDesk 600 G4 DM" "HP ProDesk 600 G4 DM (TAA)" "HP EliteBook 820 G3"
 		    ) do if /i "%%~b"=="%%~m" (
 		        set upgrade=%ProductionBuild%&&exit /b
 		    )
@@ -225,6 +265,8 @@ goto eof
 	if %errorlevel%==0 goto goodhealth
 
 	:badhealth
+		"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1909" >NUL
+		if %errorlevel%==0 set windowsversion=1909&&goto restorehealth
 		"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1903" >NUL
 		if %errorlevel%==0 set windowsversion=1903&&goto restorehealth
 		"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1809" >NUL
