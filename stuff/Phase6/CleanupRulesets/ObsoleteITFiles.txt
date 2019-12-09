@@ -1,0 +1,48 @@
+C:\users\public\desktop\tuneup.lnk
+C:\BeforeOEMChange.reg
+C:\camera.log
+C:\CNXTHDASUP.LOG
+C:\employees.ico
+C:\footprints.ICO
+C:\HPCamDrv.log
+C:\ImageSetup.ini
+C:\RTKlog.log
+C:\IT Folder\customfileassoc.xml
+C:\IT Folder\delwsus.reg
+C:\IT Folder\HP_SDM_Setup.exe
+C:\IT Folder\HPSoftPaq4.3.19.exe
+C:\IT Folder\HPSoftPaq434.exe
+C:\IT Folder\HPSoftPaq52.exe
+C:\IT Folder\HPSoftPaq535.exe
+C:\IT Folder\KBOX Update & CheckIn.exe
+C:\IT Folder\New Image Task Form.exe
+C:\IT Folder\software\activate office and windows.bat
+C:\IT Folder\software\Computrace Install.lnk
+C:\IT Folder\software\HP_SDM_4.4.0.exe
+C:\IT Folder\software\ImgSetup.exe
+C:\IT Folder\software\install.bat
+C:\IT Folder\software\KBOX Install.lnk
+C:\IT Folder\software\KBOX Update & CheckIn.exe
+C:\IT Folder\software\Master All Computer Names.lnk
+C:\IT Folder\software\New Image Task Form.exe
+C:\IT Folder\software\PC Drivers.lnk
+C:\IT Folder\software\SSM Driver Updater.bat
+C:\IT Folder\software\Temporary Profile Fix.exe
+C:\IT Folder\software\TrendMicro.lnk
+C:\IT Folder\software\Verizon.lnk
+C:\IT Folder\software\Zscaler-windows-1.3.1.0-installer.exe
+C:\IT Folder\Temporary Profile Fix.exe
+C:\IT Folder\win10decrapifier.ps1
+C:\IT Folder\wsus.vbs
+C:\IT Folder\WUInstall.exe
+C:\hei1.log
+C:\ProgramData\Synaptics\ValidityService.log
+C:\ScrubRetValFile.txt
+C:\sysprep_executor_x64.exe
+C:\temp.csv
+C:\tmuninst.ini
+C:\Users\Public\Mictray.log
+C:\WxClientInstaller.log
+C:\Windows6.1-KB917607-x64.msu
+C:\WindowsDCtranscript.txt
+C:\Windows.old\Windows\System32\DriverStore\FileRepository\cisstrt.inf_amd64_neutral_df36dd35ef6997c1\MicTray.cab
