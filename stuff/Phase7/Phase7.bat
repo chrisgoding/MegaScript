@@ -1,8 +1,10 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Phase7.bat
+:: v1.4
+:: added HPIA to the mix. SSM is still active, but once testing is complete, I'll have it switch over to all HPIA all the time.
+:: I have it creating the download directory on whatever rep share you're running from, and it's self cleaning.
 :: v1.3 
-:: Updates dell/lenovo/microsoft now. Not to toot my own horn but i think 
-:: the microsoft one is particularly clever
+:: Updates dell/lenovo/microsoft now. Not to toot my own horn but i think the microsoft one is particularly clever
 :: v1.2
 :: Combined all the batch files into this one
 :: added "exclude statics" section, to avoid removing a static IP off a 
@@ -24,6 +26,8 @@ setlocal enabledelayedexpansion
 @echo on
 if not exist "C:\it folder\megascript progress report" mkdir "C:\it folder\megascript progress report"
 
+if "%~1"=="/Kace" set kacerun=true
+if "%~1" NEQ "/Kace" set kacerun=false
 Call :setVars
 Call :ExcludeTommy
 Call :ExcludeVMWareHosts
@@ -44,7 +48,15 @@ Goto EOF
 	set thininstaller="%SYSTEMDRIVE%\Program Files (x86)\ThinInstaller\Thininstaller.exe"
 	set log="C:\IT Folder\MegaScript Progress Report"
 	set dcu="C:\Program Files (x86)\Dell\CommandUpdate\dcu-cli.exe"
+	set catalog="%cd%\Dell\catalog.xml"
 	for /f "usebackq tokens=2 delims==" %%A IN (`wmic computersystem get model /value`) DO SET MODEL=%%A
+	for /f "tokens=4-5 delims=. " %%i in ('ver') do set VERSION=%%i.%%j
+	if "%version%" == "10.0" ( FOR /F "tokens=3 USEBACKQ" %%F IN (`reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId`) DO (SET version=%%F) )
+	if "%version%" == "6.3" set version=Windows 8.1
+	if "%version%" == "6.2" set version=Windows 8
+	if "%version%" == "6.1" set version=Windows 7
+	if "%version%" == "6.0" set UpdateDrivers=false&&exit /b
+	if "%version%" == "[Version.5" set UpdateDrivers=false&&exit /b
 	exit /b
 
 :ExcludeTommy &:: Tommy says that he'd prefer to manage driver updates himself
@@ -74,10 +86,29 @@ Goto EOF
 
 :PerformUpdates
 	If %UpdateDrivers%==False exit /b
-	FOR %%G IN ( "Hewlett-Packard" "HP" ) DO ( IF /I "%vendor%"=="%%~G" Call :HPSSM )
+	FOR %%G IN ( "Hewlett-Packard" "HP" ) DO ( IF /I "%vendor%"=="%%~G" Call :HPUpdates )
 	FOR %%H IN ( "Dell" "Dell Inc." ) DO ( IF /I "%vendor%"=="%%~H" Call :DellCommandUpdate )
 	FOR %%I IN ( "Lenovo" "Lenovo Inc." ) DO ( IF /I "%vendor%"=="%%~I" Call :LenovoThinInstaller )
 	FOR %%J IN ( "Microsoft Corporation" ) DO ( IF /I "%vendor%"=="%%~J" Call :SurfaceDrivers )
+	exit /b
+
+:HPUpdates
+	if %kacerun%==true call :HPSSM
+	if %kacerun% NEQ true call :HPIA
+	exit /b
+
+:HPIA
+	echo Cleaning old drivers from driverstore...
+	ForFiles /p "%CD%\HPIA\Drivers" /s /d -180 /c "cmd /c del @file"
+	ForFiles /p "%CD%\HPIA\Drivers" -d -180 -c "cmd /c IF @isdir == TRUE rd /S /Q @path"
+	echo Cleanup complete.
+	set softpaqpath=%CD%\HPIA\Drivers\%MODEL%\%version%
+	"C:\windows\regedit.exe" /s HPIA\Disable_Open-File_Security_Warning.reg
+	if not exist "%softpaqpath%" mkdir "%softpaqpath%"
+	Echo Installing drivers...
+	HPIA\HPImageAssistant.exe /Operation:Analyze /Action:Install /Silent /Category:BIOS,Drivers,Firmware /ReportFolder:%log% /SoftpaqDownloadFolder:"%softpaqpath%"
+	"C:\windows\regedit.exe" /s HPIA\Enable_Open-File_Security_Warning.reg
+	Echo Driver installation complete.
 	exit /b
 
 :HPSSM
@@ -86,6 +117,7 @@ Goto EOF
 
 :DellCommandUpdate
 	if not exist %dcu%  DCU_Setup_2_4_0.exe /s /v"/qn"
+	timeout 5 >nul
 	if exist "%cd%\Dell\%MODEL%\Catalog.xml" ( %dcu% /catalog "%cd%\Dell\%MODEL%\Catalog.xml" /log %log% ) else ( %dcu% /log %log% ) &:: runs local catalog if it exists, runs internet catalog otherwise
 	exit /b
 
