@@ -24,6 +24,7 @@ IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysn
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
 @echo off
+set TrendVersion=12.0.5383
 set trendunloadpassword=<TrendUnloadPasswordGoesHere>
 set trendinstallpath=\\<YourOfficeScanServerGoesHere>\ofcscan\AutoPccP.exe
 set windows10key=<win10 product key goes here>
@@ -149,22 +150,33 @@ goto eof
 	exit /b
 
 :DisableTrend
-	:symanteccheck &:: verifies that symantec is not installed; we don't want to do anything related to trend on a symantec machine
-		if %OS%==32BIT goto checkforsymantec32
-		if %OS%==64BIT goto checkforsymantec64
-			:checkforsymantec32
-				IF exist "C:\Program Files\Symantec\Symantec Endpoint Protection" ( exit /b ) ELSE ( goto checkforinstalledtrend )
+	if %PublicSafety%==True exit /b
+	Call :SymantecCheck
+	If %SymantecInstalled%==True exit /b
+	Call :CheckForInstalledTrend
+	If %TrendInstalled%==False Call :InstallTrend
+	Call :TrendVersionCheck
+	Call :UnloadTrend
+	exit /b
 
-			:checkforsymantec64
-				IF exist "C:\Program Files (x86)\Symantec\Symantec Endpoint Protection" ( exit /b ) ELSE ( goto checkforinstalledtrend )
+	:SymantecCheck &:: verifies that symantec is not installed; we don't want to do anything related to trend on a symantec machine
+		if %OS%==32BIT Call :CheckForSymantec32
+		if %OS%==64BIT Call :CheckForSymantec64
+		exit /b
+			:CheckForSymantec32
+				IF exist "C:\Program Files\Symantec\Symantec Endpoint Protection" ( set SymantecInstalled=true&&exit /b ) ELSE ( set SymantecInstalled=false&&exit /b )
 
-	:checkforinstalledtrend
+			:CheckForSymantec64
+				IF exist "C:\Program Files (x86)\Symantec\Symantec Endpoint Protection" ( set SymantecInstalled=true&&exit /b ) ELSE ( set SymantecInstalled=false&&exit /b  )
+
+	:CheckForInstalledTrend
 		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" | "%SystemPath%\find.exe" "Trend" >NUL
-		if %errorlevel%==0 goto checkforrunningtrend
+		if %errorlevel%==0 set TrendInstalled=True&&exit /b
 		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" | "%SystemPath%\find.exe" "Trend" >NUL
-		if %errorlevel%==0 goto checkforrunningtrend
+		if %errorlevel%==0 set TrendInstalled=True&&exit /b
+		set TrendInstalled=False&&exit /b
 
-	:installtrend
+	:InstallTrend
 		if not exist %trendinstallpath% exit /b
 		%trendinstallpath%
 		:installloop
@@ -173,25 +185,32 @@ goto eof
 			if %errorlevel% == 0 goto installloop
 			"%SystemPath%\tasklist.exe" /FI "imagename eq pccnt.exe"|"%SystemPath%\find.exe" /I "pccnt.exe"
 			if %errorlevel% == 0 shutdown /r /f /t 0
-			goto DisableTrend
+			Exit /b
 
-	:checkforrunningtrend &:: if trend is already stopped, dont bother trying to disable trend
+	:TrendVersionCheck
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
+		if %errorlevel%==0 exit /b
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
+		if %errorlevel% NEQ 0 ( echo Trend Needs to be uninstalled and reinstalled > "C:\it folder\megascript progress report\Uninstall Trend Please.txt" )
+		exit /b
+
+	:UnloadTrend
+	:CheckForRunningTrend &:: if trend is already stopped, dont bother trying to disable trend
 		"%SystemPath%\tasklist.exe" /FI "imagename eq TMBMSRV.exe"|"%SystemPath%\find.exe" /I "TMBMSRV.exe"
 		if %errorlevel% NEQ 0 exit /b
-	:unloadtrend
-		if %OS%==32BIT goto disabletrend32
-		if %OS%==64BIT goto disabletrend64
-			:disabletrend32 &:: calls the command to unload trend. automatically presses enter when prompted
+	
+		if %OS%==32BIT goto DisableTrend32
+		if %OS%==64BIT goto DisableTrend64
+			:DisableTrend32 &:: calls the command to unload trend. automatically presses enter when prompted
 				type enter.txt | "C:\Program Files\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %trendunloadpassword%
-				goto waitfor15
+				goto WaitFor30
 
-			:disabletrend64
+			:DisableTrend64
 				type enter.txt | "C:\Program Files (x86)\Trend Micro\OfficeScan Client\PccNTMon.exe" -n %trendunloadpassword%
-				goto waitfor15
-		:waitfor15
-			timeout 15 >nul
+				goto WaitFor30
+		:WaitFor30
+			timeout 30 >nul
 			goto checkforrunningtrend
-	exit /b
 
 :LANWLANSwitcher
 	if not exist "C:\Program Files\WLANManager" ( "%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -executionpolicy bypass -file WLANManager.ps1 -Install:System )
