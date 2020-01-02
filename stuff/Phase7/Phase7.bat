@@ -1,5 +1,11 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Phase7.bat
+:: v1.5
+:: Kace doesn't seem to like running HPIA using the same lines I used for the manned run.
+:: I wrote a separate function for Kace HPIA, and it kinda sucks, but works. Definitely WIP
+:: I've also moved the self cleaning part of the HPIA function to "update replication shares.bat"
+:: which you can find in the root of the megascript directory. The cleaning takes a while when you have 50 models,
+:: so I no longer want every client to run it.
 :: v1.4
 :: added HPIA to the mix. SSM is still active, but once testing is complete, I'll have it switch over to all HPIA all the time.
 :: I have it creating the download directory on whatever rep share you're running from, and it's self cleaning.
@@ -32,7 +38,6 @@ Call :setVars
 Call :ExcludeTommy
 Call :ExcludeVMWareHosts
 Call :ExcludeStatics
-Call :FindVendor
 Call :PerformUpdates
 Call :PostUpdate
 Goto EOF
@@ -49,6 +54,7 @@ Goto EOF
 	set log="C:\IT Folder\MegaScript Progress Report"
 	set dcu="C:\Program Files (x86)\Dell\CommandUpdate\dcu-cli.exe"
 	set catalog="%cd%\Dell\catalog.xml"
+	for /f "usebackq tokens=2 delims==" %%A IN (`wmic csproduct get vendor /value`) DO SET VENDOR=%%A
 	for /f "usebackq tokens=2 delims==" %%A IN (`wmic computersystem get model /value`) DO SET MODEL=%%A
 	for /f "tokens=4-5 delims=. " %%i in ('ver') do set VERSION=%%i.%%j
 	if "%version%" == "10.0" ( FOR /F "tokens=3 USEBACKQ" %%F IN (`reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId`) DO (SET version=%%F) )
@@ -80,11 +86,8 @@ Goto EOF
 	if %errorlevel% == 0 ( echo Static IP detected, driver update canceled > "C:\it folder\megascript progress report\Static IP detected.txt"&&set UpdateDrivers=False&&exit /b )
 	exit /b
 
-:FindVendor
-	for /f "usebackq tokens=2 delims==" %%A IN (`wmic csproduct get vendor /value`) DO SET VENDOR=%%A
-	exit /b
-
 :PerformUpdates
+	if "%MODEL%"=="HP Z4 G4 Workstation" exit /b &:: The aftermarket RAM we have in many of our Z4 G4's no longer works in BIOS version 2.41
 	If %UpdateDrivers%==False exit /b
 	FOR %%G IN ( "Hewlett-Packard" "HP" ) DO ( IF /I "%vendor%"=="%%~G" Call :HPUpdates )
 	FOR %%H IN ( "Dell" "Dell Inc." ) DO ( IF /I "%vendor%"=="%%~H" Call :DellCommandUpdate )
@@ -93,25 +96,33 @@ Goto EOF
 	exit /b
 
 :HPUpdates
-	if %kacerun%==true call :HPSSM
-	if %kacerun% NEQ true call :HPIA
+	"C:\windows\regedit.exe" /s HPIA\Disable_Open-File_Security_Warning.reg
+	set softpaqpath=%CD%\HPIA\Drivers\%MODEL%\%version%
+	if not exist "%softpaqpath%" mkdir "%softpaqpath%"
+	if %kacerun%==true call :HPIAKACE
+	if %kacerun% NEQ true call :HPIAManual
+	"C:\windows\regedit.exe" /s HPIA\Enable_Open-File_Security_Warning.reg
 	exit /b
 
-:HPIA
-	echo Cleaning old drivers from driverstore...
-	ForFiles /p "%CD%\HPIA\Drivers" /s /d -180 /c "cmd /c del @file"
-	ForFiles /p "%CD%\HPIA\Drivers" -d -180 -c "cmd /c IF @isdir == TRUE rd /S /Q @path"
-	echo Cleanup complete.
-	set softpaqpath=%CD%\HPIA\Drivers\%MODEL%\%version%
-	"C:\windows\regedit.exe" /s HPIA\Disable_Open-File_Security_Warning.reg
-	if not exist "%softpaqpath%" mkdir "%softpaqpath%"
+:HPIAManual
 	Echo Installing drivers...
-	HPIA\HPImageAssistant.exe /Operation:Analyze /Action:Install /Silent /Category:BIOS,Drivers,Firmware /ReportFolder:%log% /SoftpaqDownloadFolder:"%softpaqpath%"
-	"C:\windows\regedit.exe" /s HPIA\Enable_Open-File_Security_Warning.reg
-	Echo Driver installation complete.
+	timeout 2 >nul
+	start /wait "Driver Updater" "C:\IT Folder\Area 51\programs\HPIA\HPImageAssistant.exe" /Operation:Analyze /Action:Install /Silent /Category:BIOS,Drivers,Firmware /ReportFolder:%log% /SoftpaqDownloadFolder:"%softpaqpath%"
+	exit /b
+
+:HPIAKACE
+	"%SystemPath%\Robocopy.exe" "%softpaqpath%" "C:\IT Folder\HPIA\Drivers" /MIR
+	"%SystemPath%\SCHTASKS.exe" /Create /TN RunHPIA /tr "C:\IT Folder\Area 51\programs\HPIA.bat" /sc ONEVENT /EC Application /MO *[System/EventID=777] /RU "NT AUTHORITY\SYSTEM" /f
+	"%SystemPath%\SCHTASKS.exe" /Run /TN "RunHPIA"
+	:WaitingForHPIA
+	timeout 30 >nul
+	"%SystemPath%\tasklist.exe" /FI "imagename eq HPImageAssistant.exe"|"%SystemPath%\find.exe" /I "HPImageAssistant.exe"
+	if %errorlevel% == 0 goto WaitingForHPIA
+	"%SystemPath%\Robocopy.exe" "C:\IT Folder\HPIA\Drivers" "%softpaqpath%" /COPY:DT
 	exit /b
 
 :HPSSM
+	::leaving this here as a backup, in case HPIA stops working, we can revert back to this easily. None of the branches lead here right now
 	%cd%\SSM\SSM.exe %cd%\SSM /accept
 	exit /b
 
@@ -122,6 +133,7 @@ Goto EOF
 	exit /b
 
 :LenovoThinInstaller
+	::insufficiently tested, use at own risk
 	if not exist %thininstaller% ( "%TVUR%lenovothininstaller1.3.0007-2019-04-25.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART )
 	%thininstaller% /CM -search A -action INSTALL -repository "%TVUR%" -noicon -showprogress -includerebootpackages 1,3,4 -noreboot -log %log%
 	exit /b
