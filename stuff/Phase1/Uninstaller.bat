@@ -17,7 +17,7 @@ IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysn
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
 @echo on
-
+call :ExcludePublicSafety
 call :TaskKillDameware
 call :GUIDUninstaller
 call :PathUninstaller
@@ -27,11 +27,40 @@ call :VMWareTools
 call :Dameware
 call :HPesuwin7
 goto eof
+
 :::::::::::::
 ::FUNCTIONS::
 :::::::::::::
 
+:ExcludePublicSafety &:: we don't want to run certain steps on certain PC's, so we set a flag here based on the PC name.
+	echo %computername% | "%SystemPath%\find.exe" /i "PUBLICSAFETY"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BENCH"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BLS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "BRICE"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "EOC"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "EM"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "FIRE"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "FR"
+	if %errorlevel%==0 ( set PublicSafety==True && exit /b ) else ( set PublicSafety==False )
+	echo %computername% | "%SystemPath%\find.exe" /i "GAS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "RS"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "SU"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	echo %computername% | "%SystemPath%\find.exe" /i "TOUGH"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
+	exit /b
+
 :TaskKillDameware
+	if %PublicSafety%==True exit /b
 	"%SystemPath%\tasklist.exe" /FI "imagename eq DWRCS.exe"|"%SystemPath%\find.exe" /I "DWRCS.exe"
 	if %errorlevel%==0 "%SystemPath%\taskkill.exe" /f /im DWRCS.exe >nul
 	"%SystemPath%\tasklist.exe" /FI "imagename eq DWRCST.exe"|"%SystemPath%\find.exe" /I "DWRCST.exe"
@@ -60,6 +89,9 @@ goto eof
 	IF exist "C:\Program Files\HP\Digital Imaging\HPSSupply\hpzscr01.exe" ( start "" "C:\Program Files\HP\Digital Imaging\HPSSupply\hpzscr01.exe" -datfile hpqbud16.dat )
 	IF exist "C:\Program Files\HP\HP Touchpoint Analytics Client\TAInstaller.exe" ( start "" "C:\Program Files\HP\HP Touchpoint Analytics Client\TAInstaller.exe" --uninstall --ignore-deployers )
 	IF exist "C:\Windows10Upgrade\Windows10UpgraderApp.exe" ( start "" "C:\Windows10Upgrade\Windows10UpgraderApp.exe" /ForceUninstall )
+	IF exist "C:\Program Files\gs\uninstgs.exe" ( start "" "C:\Program Files\gs\uninstgs.exe" "C:\Program Files\gs\gs9.00\uninstal.txt" )
+	IF exist "c:\Program Files\gs\gs8.64\Uninst.exe" ( start "" "c:\Program Files\gs\gs8.64\Uninst.exe" -ProductCode {06CD45E6-FF5E-4D8E-BC01-B276A90DADF2} -arp )
+	IF exist "C:\Program Files (x86)\Acro Software\CutePDF Writer\Setup64.exe" ( start "" "C:\Program Files (x86)\Acro Software\CutePDF Writer\Setup64.exe" /uninstall )
 	exit /b
 
 :HPVelocity
@@ -87,6 +119,7 @@ goto eof
 	exit /b
 
 :Dameware &:: makes sure that the full edition of dameware is not installed, and otherwise uninstalls dameware. Doing this because someone accidentally left dameware in the image back in the day.
+	if %PublicSafety%==True exit /b
 	if exist temp.txt del temp.txt &:: deletes the temp file created by the vmcheck step
 	"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" |  "%SystemPath%\find.exe" "DameWare Remote Support" >NUL
 		if %errorlevel%==0 exit /b
