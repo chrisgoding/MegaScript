@@ -6,31 +6,39 @@ set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemR
 
 del *.log
 
-:closeprograms
+Call :ClosePrograms
+Call :UninstallOldChrome
+Call :PerformInstall
+goto eof
+
+:ClosePrograms
 	"%SystemPath%\tasklist.exe" /FI "imagename eq chrome.exe"|"%SystemPath%\find.exe" /I "chrome.exe"
 	if %errorlevel%==0 "%SystemPath%\taskkill.exe" /f /im chrome.exe >nul
+	exit /b
 
-:uninstalloldchrome
+:UninstallOldChrome
 	"%SystemPath%\cscript.exe" "RM_Google_Update.vbs" 
 	"%SystemPath%\cscript.exe" "RM_Chrome.vbs" 
 	"%SystemPath%\tasklist.exe" /FI "imagename eq GoogleUpdate.exe"|"%SystemPath%\find.exe" /I "GoogleUpdate.exe"
 	if %errorlevel%==0 "%SystemPath%\taskkill.exe" /f /im GoogleUpdate.exe >nul
+	exit /b
 
-:bitnesscheck
-	"%SystemPath%\reg.exe" Query "HKLM\Hardware\Description\System\CentralProcessor\0"|"%SystemPath%\find.exe" /I "x86">NUL
-	If %ERRORLEVEL% == 0 (Goto x86) ELSE (Goto x64)
- 
+:PerformInstall
+	"%SystemPath%\Reg.exe" Query "HKLM\Hardware\Description\System\CentralProcessor\0" | "%SystemPath%\find.exe" /i "x86" > NUL && set OS=32BIT || set OS=64BIT
+	If %OS%==32BIT ( Call :x86 ) else ( Call :x64 )
+ 	exit /b
+
 	:x86
 		"%SystemPath%\msiexec.exe" /i GoogleChromeStandaloneEnterprise.msi NOGOOGLEUPDATEPING=1 /l*v log.txt /qn /norestart
-		goto end
+		exit /b
 
 	:x64
 		"%SystemPath%\msiexec.exe" /i GoogleChromeStandaloneEnterprise64.msi NOGOOGLEUPDATEPING=1 /l*v log.txt /qn /norestart
-		goto end
+		exit /b
 
-:end
+:eof
 	timeout 15 >nul
 	"%SystemPath%\cscript.exe" "RM_Google_Update.vbs" 
-	endlocal enabledelayedexpansion
+	endlocal
 	popd
 	exit
