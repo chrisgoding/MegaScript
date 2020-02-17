@@ -40,7 +40,6 @@ goto eof
 	exit /b
 
 :InstallFlash
-	"%SystemPath%\msiexec.exe" /i install_flash_player_32_active_x.msi REINSTALLMODE=vemus /L*v INST_flash_player_32_active_x_32bit.log /qn /norestart
 	"%SystemPath%\msiexec.exe" /i install_flash_player_32_plugin.msi REINSTALLMODE=vemus /L*v INST_flash_player_32_plugin_32bit.log /qn /norestart
 	"%SystemPath%\msiexec.exe" /i install_flash_player_32_ppapi.msi REINSTALLMODE=vemus /L*v INST_flash_player_32_ppapi_32bit.log /qn /norestart
 	"%SystemPath%\xcopy.exe" "mms.cfg" "%Systempath%\Macromed\Flash\" /Y
