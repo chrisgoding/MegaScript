@@ -24,17 +24,16 @@ IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysn
 set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
 
 @echo off
+set KaceAgentMSI=ampagent-10.0.113-x86_vkbox.polk-county.net.msi
 set TrendVersion=12.0.5383
-set trendunloadpassword=<TrendUnloadPasswordGoesHere>
-set trendinstallpath=\\<YourOfficeScanServerGoesHere>\ofcscan\AutoPccP.exe
-set windows10key=<win10 product key goes here>
-set officepro16key=<office16 pro product key goes here>
-set officestandard16key=<office16 standard product key goes here>
-set domain=<a domain to search for to ensure that certain steps only run on domain PC's>
-set SMAHOST=<if you use kace sma, the hostname goes here to automate the installation of the kace agent>
+set trendunloadpassword=<yourtrendpassword>
+set trendinstallpath=\\<your trend server>\ofcscan\AutoPccP.exe
+set windows10key=<your win 10 key>
+set officepro16key=<your ofc pro key>
+set officestandard16key=<your ofc std key>
+set domain=<your domain>
+set SMAHOST=<your kace sma host>
 @echo on
-
-
 
 if not exist "C:\Temp\Stuff" mkdir "C:\Temp\Stuff"
 ForFiles /p "C:\IT Folder\Megascript Progress Report" /s /d -180 /c "cmd /c del @file" &:: removes log files older than 180 days, so that the log directory does not become infinite.
@@ -46,7 +45,10 @@ call :Bitnesscheck
 call :SetLaptoporDesktop
 call :WindowsVersion
 call :PowerScheme
+Echo Disabling echo to hide Trend password...
+@echo off
 call :DisableTrend
+@echo on
 call :LANWLANSwitcher
 call :FixBootSettings
 call :AddITFiles
@@ -86,6 +88,8 @@ goto eof
 	exit /b
 
 :ExcludePublicSafety &:: we don't want to run certain steps on certain PC's, so we set a flag here based on the PC name.
+	echo %computername% | "%SystemPath%\find.exe" /i "PUBLICSAFETY"
+	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
 	echo %computername% | "%SystemPath%\find.exe" /i "BENCH"
 	if %errorlevel%==0 ( set PublicSafety=True && exit /b ) else ( set PublicSafety=False )
 	echo %computername% | "%SystemPath%\find.exe" /i "BLS"
@@ -188,14 +192,20 @@ goto eof
 			Exit /b
 
 	:TrendVersionCheck
-		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayVersion" | "%SystemPath%\find.exe" "%TrendVersion%"
 		if %errorlevel%==0 exit /b
-		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | find "DisplayVersion" | find "%TrendVersion%"
-		if %errorlevel% NEQ 0 ( echo Trend Needs to be uninstalled and reinstalled > "C:\it folder\megascript progress report\Uninstall Trend Please.txt" )
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayVersion" | "%SystemPath%\find.exe" "%TrendVersion%"
+		if %errorlevel%==0 exit /b
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" | "%SystemPath%\find.exe" "Trend Micro Apex One Security Agent"
+		if %errorlevel%==0 exit /b
+		"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall" /s | "%SystemPath%\find.exe" "DisplayName" | "%SystemPath%\find.exe" "Trend Micro Apex One Security Agent"
+		if %errorlevel%==0 exit /b
+		echo Trend Needs to be uninstalled and reinstalled > "C:\it folder\megascript progress report\Uninstall Trend Please.txt"
 		exit /b
 
 	:UnloadTrend
 	:CheckForRunningTrend &:: if trend is already stopped, dont bother trying to disable trend
+		cls
 		"%SystemPath%\tasklist.exe" /FI "imagename eq TMBMSRV.exe"|"%SystemPath%\find.exe" /I "TMBMSRV.exe"
 		if %errorlevel% NEQ 0 exit /b
 	
@@ -212,8 +222,23 @@ goto eof
 			timeout 30 >nul
 			goto checkforrunningtrend
 
+
 :LANWLANSwitcher
-	if not exist "C:\Program Files\WLANManager" ( "%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -executionpolicy bypass -file WLANManager.ps1 -Install:System )
+	if exist "C:\Program Files\WLANManager\lanwlanswitcherv1.1.txt" exit /b 
+	if exist "C:\Program Files\WLANManager" call :RemoveOldLANWLAN
+	Call :InstallNewLANWLAN
+	exit /b
+
+	:RemoveOldLANWLAN
+	"%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -executionpolicy bypass -file WLANManager\WLANManager.ps1 -Remove:System
+	for /D %%f in ("C:\Program Files\WLANManager\*") do RD /S /Q "%%f"   &:: delete folders
+	for %%f in ("C:\Program Files\WLANManager\*") do DEL /F /S /Q "%%f"   &:: delete files
+	RD "C:\Program Files\WLANManager"
+	exit /b
+
+	:InstallNewLANWLAN
+	"%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -executionpolicy bypass -file WLANManager\WLANManager.ps1 -Install:System
+	echo newer wlan manager installed > "C:\Program Files\WLANManager\lanwlanswitcherv1.1.txt"
 	exit /b
 
 :FixBootSettings
@@ -260,8 +285,9 @@ goto eof
 		if exist "c:\windows\syswow64\rpcnet.exe" ( goto checkpoint ) else ( goto installcomputrace )
 
 	:installcomputrace
-		"%SystemPath%\xcopy.exe" computrace.msi "C:\Temp\Stuff"
-		copy computrace.ps1 C:\Temp\Stuff\computrace.ps1 /y && "%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -ExecutionPolicy Bypass -File C:\Temp\Stuff\computrace.ps1 && del /f C:\Temp\Stuff\computrace.ps1
+		"%SystemPath%\xcopy.exe" computrace.msi "C:\Temp\Stuff" /y
+		"%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" -ExecutionPolicy Bypass -File C:\Temp\Stuff\computrace.ps1
+		del /f C:\Temp\Stuff\computrace.ps1
 		Echo Computrace Installed
 
 	:checkpoint
@@ -270,11 +296,12 @@ goto eof
 		if "%version%" == "6.2" exit /b
 		if "%version%" == "6.1" exit /b
 		if "%version%" == "6.0" exit /b
+		if "%version%" == "[Version.5" exit /b
 		:checkpointinstall &:: on windows 10 laptops create desktop shortcut to the vpn connection
 			"%SystemPath%\xcopy.exe" "Connect to VPN.lnk" "C:\users\public\desktop" /Y
 			exit /b
 :BIOSConfig
-	BCU\BCU.bat &:: runs the BIOS config utility to appropriately set the wake on lan and lan / wlan switching settings
+	BCU\BIOSENFORCER.bat &:: runs the BIOS config utility to appropriately set the wake on lan and lan / wlan switching settings
 
 :FixDirectory &:: for some reason the BCU function does silly things to the working directory
 	:popd
@@ -295,7 +322,7 @@ goto eof
 :KaceAgentInstallAndInventory
 	if %OnDomain%==False exit /b
 	if exist "C:\program files\quest\kace\runkbot.exe" ( goto runkbot32 ) 
-	if exist "C:\program files (x86)\quest\kace\runkbot.exe" ( goto runkbot64 ) ELSE ( start /wait "" "%SystemPath%\msiexec.exe" /i "C:\IT Folder\Area 51\programs\ampagent-9.0.167-x86.msi" HOST=%SMAHOST% /qn /norestart ) &:: installs kace agent if it's missing
+	if exist "C:\program files (x86)\quest\kace\runkbot.exe" ( goto runkbot64 ) ELSE ( start "Installing Kace Agent" /wait "%SystemPath%\msiexec.exe" /i "C:\IT Folder\Area 51\programs\%KaceAgentMSI%" HOST=%SMAHOST% /qn /norestart ) &:: installs kace agent if it's missing
 	if %OS%==32BIT goto runkbot32
 	if %OS%==64BIT goto runkbot64
 	:runkbot32
@@ -407,10 +434,10 @@ exit /b
 	"%SystemPath%\reg.exe" query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp" | "%SystemPath%\find.exe" "DefaultSecureProtocols" | "%SystemPath%\find.exe" "a00"
 	if %errorlevel%==0 exit /b
 	START "" /WAIT "%SystemPath%\msiexec.exe" /i "MicrosoftEasyFix51044.msi" /quiet
-	"%SystemPath%\timeout.exe" 5>nul
+	"%SystemPath%\timeout.exe" 5 >nul
 	goto TLScheck &:: return to regcheck to verify settings applied
 
 :eof
-	IF exist "C:\IT Folder\windowsupgrade.txt" ( start "" "C:\Program Files (x86)\Microsoft Office\Office16\winword.exe" ) &:: opens word in case you just upgraded from windows 7 to 10
+	IF exist "C:\IT Folder\windowsupgrade.txt" ( if exist "C:\Program Files (x86)\Microsoft Office\Office16\winword.exe" start "" "C:\Program Files (x86)\Microsoft Office\Office16\winword.exe" ) &:: opens word in case you just upgraded from windows 7 to 10
 	if exist "C:\IT Folder\windowsupgrade.txt" del /F /Q "C:\IT Folder\windowsupgrade.txt"
 	popd
