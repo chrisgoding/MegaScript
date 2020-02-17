@@ -3,3 +3,8 @@ C:\Program Files (x86)\HP Games\Hoyle Card Games\uninstall\uninstaller.exe
 C:\Program Files (x86)\HP Games\Uninstall.exe
 C:\Program Files\AskBarDis\unins000.exe
 C:\Program Files\HP Photo Creations\uninst.exe
+C:\Program Files\gs\gs9.02\uninstgs.exe
+C:\Program Files\gs\gs9.19\uninstgs.exe
+C:\Program Files (x86)\gs\gs9.20\uninstgs.exe
+C:\Program Files\gs\gs9.26\uninstgs.exe
+C:\Program Files\Acro Software\CutePDF Writer\uninscpw.exe
