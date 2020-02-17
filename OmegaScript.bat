@@ -78,18 +78,17 @@ goto eof
 
 :RenamePC
 	if %KACERUN%==True exit /b
-	::we had some interns trying to run the script on computers that hadnt been named yet, this is some handholding to get them to do things our way
-	::"IT-" is the prefix applied to a PC during the imaging process in our environment
 	echo %computername% | find "IT-"
 	if %errorlevel% NEQ 0 exit /b
 	@echo off
 	cls
 	echo You need to rename this PC.
+	start "" "C:\Program Files (x86)\Microsoft Office\Office16\excel.exe" "\\vboccfs02\IT_PCSupport\Documentation and Instructions\Computer-Name-Spreadsheets\Master All Computer Names.xlsx"
 	echo If this is a BoCC computer, the naming scheme is as follows:
 	echo (Computer type)(Division code)(Building Code)N(3 digit number)
 	echo Computer type is a single character. Desktops = D, Laptops = L, Tablets = M, Virtual machines = V
-	echo Division code is a two character code, which you should be able to look up in the PC naming spreadsheet
-	echo The Building Code is a 5 digit number, which you should be able to look up in the PC naming spreadsheet
+	echo Division code is a two character code, which you should be able to look up in the PC naming spreadsheet (which opened in the background)
+	echo The Building Code is a 5 digit number, which you should be able to look up in the PC naming spreadsheet (which opened in the background)
 	echo The 3 digit number at the end is whichever number is available for use. The spreadsheet can provide guidance for this, but you should also check active directory and kace inventory to make sure that the name you want to use is not taken.
 	echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
 	echo Taking a name that is already in use can cause the other computer with that name to be knocked off the domain. Please exercise caution.
@@ -108,28 +107,19 @@ ECHO %batchName% Arguments: P1=%1
 	pushd "%~dp0"
 	IF EXIST "%SystemRoot%\Sysnative\msiexec.exe" (set "SystemPath=%SystemRoot%\Sysnative") ELSE (set "SystemPath=%SystemRoot%\System32")
 	set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemRoot%\System32\WindowsPowerShell\v1.0\"
-	set NetworkLogDirectory=\\<yourserver>\MegaScript\Logs
+	set NetworkLogDirectory=\\vboccfs02\IT_SSM\Logs
 	set LocalLogDirectory="C:\IT Folder\Megascript Progress Report"
-	::the below are examples, change as needed
-	set VLAN1Share=\\reppc1\megascript
-	set VLAN1Gateway=10.0.0.1
-	set VLAN2Share=\\reppc2\megascript
-	set VLAN2Gateway=10.0.1.1
-	set VLAN3Share=\\reppc3\megascript
-	set VLAN3Gateway=10.0.2.1
 	if not exist %locallogdirectory% mkdir %LocalLogDirectory% >nul
 	if not exist "%NetworkLogDirectory%\%computername%" mkdir "%NetworkLogDirectory%\%computername%" >nul
 	exit /b
 
 :FindRepShare
 	ipconfig /all > "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-	find "VLAN1Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-	if %errorlevel%==0 (set workingdirectory=%ITRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
-	find "%VLAN2Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-	if %errorlevel%==0 (set workingdirectory=%WRMRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
-	find "%VLAN3Gateway%" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
-	if %errorlevel%==0 (set workingdirectory=%UTAdminRepShare%&&exit /b) else (set workingdirectory=%~dp0%)
-	echo Running script from %workingdirectory% 
+	for /f "tokens=1-2" %%i in ( repshares.txt ) do (
+	find "%%i" "C:\IT Folder\Megascript Progress Report\ipconfig.txt"
+	if errorlevel 0 if not errorlevel 1 (set workingdirectory=%%j&&exit /b) else (set workingdirectory=%~dp0%)
+	)
+	echo Running script from %workingdirectory%
 	exit /b
 
 :RunType
@@ -170,14 +160,14 @@ ECHO %batchName% Arguments: P1=%1
 
 :ModeSelectKace
 	IF %RunType%=="/Pico" Call :RunPico
-	IF %RunType%=="/Mini" Call :RunMini
+	IF %RunType%=="/Mini" Call :RunKaceMini
 	IF %RunType%=="/Mega" Call :RunKaceMega
 	IF %RunType%=="/Ultra" Call :RunKaceUltra
 	exit /b
 
 :ModeSelectManual
 	IF %RunType%=="/Pico" Call :RunPico
-	IF %RunType%=="/Mini" Call :RunMini
+	IF %RunType%=="/Mini" Call :RunManualMini
 	IF %RunType%=="/Mega" Call :RunManualMega
 	IF %RunType%=="/Ultra" Call :RunManualUltra
 	exit /b
@@ -193,7 +183,7 @@ ECHO %batchName% Arguments: P1=%1
 	"%SystemPath%\shutdown.exe" -a
 	exit /b
 
-:RunMini
+:RunKaceMini
 	call :GetTime
 	echo %username% > %LocalLogDirectory%"\!today!_!now! MiniScript initiated by %username%.txt"
 	call :BatteryCheck
@@ -202,7 +192,20 @@ ECHO %batchName% Arguments: P1=%1
 	call :Phase2
 	call :Phase5Quick
 	call :Phase6Quick
-	call :Phase7
+	call :Phase7Kace
+	call :Chrome
+	exit /b
+
+:RunManualMini
+	call :GetTime
+	echo %username% > %LocalLogDirectory%"\!today!_!now! MiniScript initiated by %username%.txt"
+	call :BatteryCheck
+	call :Phase0
+	call :Phase1
+	call :Phase2
+	call :Phase5Quick
+	call :Phase6Quick
+	call :Phase7Manual
 	call :Chrome
 	exit /b
 
@@ -218,7 +221,7 @@ ECHO %batchName% Arguments: P1=%1
 	call :Phase4Kace
 	call :Phase5Long
 	call :Phase6Ultra
-	call :Phase7
+	call :Phase7Kace
 	call :Chrome
 	exit /b
 
@@ -234,7 +237,7 @@ ECHO %batchName% Arguments: P1=%1
 	call :Phase4Manual
 	call :Phase5Long
 	call :Phase6Medium
-	call :Phase7
+	call :Phase7Manual
 	call :Chrome
 	exit /b
 
@@ -250,7 +253,7 @@ ECHO %batchName% Arguments: P1=%1
 	call :Phase4Kace
 	call :Phase5Long
 	call :Phase6Ultra
-	call :Phase7
+	call :Phase7Kace
 	call :Chrome
 	exit /b
 
@@ -266,11 +269,12 @@ ECHO %batchName% Arguments: P1=%1
 	call :Phase4Manual
 	call :Phase5Long
 	call :Phase6Ultra
-	call :Phase7
+	call :Phase7Manual
 	call :Chrome
 	exit /b
 
 :BatteryCheck
+exit /b
 	WMIC Path Win32_Battery Get BatteryStatus | find "1"
 	if %errorlevel%==0 @echo off && cls && echo Running on battery power. Please plug in a power adapter when running the megascript. && timeout 30 >nul && goto eof
 	exit /b
@@ -320,13 +324,13 @@ ECHO %batchName% Arguments: P1=%1
 
 :Phase4Kace
 	call :StartPhase
-	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatercerts /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
+	call stuff\phase4\wsus\cmd\doupdate.cmd /instwmf /updatercerts /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
 	call :EndPhase
 	exit /b
 
 :Phase4Manual
 	call :StartPhase
-	call stuff\phase4\wsus\cmd\doupdate.cmd /instdotnet4 /instwmf /updatetsc /updatercerts /updatecpp /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
+	call stuff\phase4\wsus\cmd\doupdate.cmd /instwmf /updatetsc /updatercerts /updatecpp /monitoron > %LocalLogDirectory%"\!today!_!now! phase 4.txt"
 	call :EndPhase
 	exit /b
 
@@ -367,9 +371,15 @@ ECHO %batchName% Arguments: P1=%1
 	call :EndPhase
 	exit /b
 
-:Phase7
+:Phase7Kace
 	call :StartPhase
-	call stuff\phase7\Phase7.bat > %LocalLogDirectory%"\!today!_!now! phase 7.txt"
+	call stuff\phase7\Phase7.bat /Kace > %LocalLogDirectory%"\!today!_!now! phase 7.txt"
+	call :EndPhase
+	exit /b
+
+:Phase7Manual
+	call :StartPhase
+	call stuff\phase7\Phase7.bat /Manual > %LocalLogDirectory%"\!today!_!now! phase 7.txt"
 	call :EndPhase
 	exit /b
 
@@ -387,6 +397,12 @@ ECHO %batchName% Arguments: P1=%1
 	echo %cd% | find "C:\Windows\System32"
 	if %errorlevel% == 0 goto StartPhase
 	call :GetTime
+	@echo off
+	cls
+	echo ############################################################################################
+	echo This batch window does not contain any useful information. Minimize it and look at the logs.
+	echo ############################################################################################
+	@echo on
 	exit /b
 
 :EndPhase
@@ -396,10 +412,12 @@ ECHO %batchName% Arguments: P1=%1
 	exit /b
 
 :GetTime
+	@echo off
 	set today=!date:/=-!
 	set now=!time::=-!
 	set millis=!now:*.=!
 	set now=!now:.%millis%=!
+	@echo on
 	exit /b
 
 :eof
