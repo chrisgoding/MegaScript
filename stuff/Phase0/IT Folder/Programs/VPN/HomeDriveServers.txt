@@ -1,0 +1,2 @@
+\\<server1>\<share1>
+\\<server2>\<share2>
