@@ -2,20 +2,22 @@
 :: ADDREMOTEAPPS.BAT
 :: 
 :: Checks if you have a remoteapps connection 
-:: by looking for the remoteapps folder 
+:: by looking for the Polk County (RADC) folder 
 :: in the start menu.
 :: If the folder is not found, runs a powershell
 :: file that uses a .wcx file to automatically 
-:: set up your remote apps.
+:: set up the Polk County remote apps.
 ::
-:: If you got this on github, you need to make 
-:: your own .wcx file. Google it.
+:: email chrisgoding@polk-county.net with any
+:: concerns or suggestions
 :::::::::::::::::::::::::::::::::::::::::::::::::
-echo %userdomain% | find "<CHANGE THIS TO YOUR USERDOMAIN>"
+if not DEFINED IS_MINIMIZED set IS_MINIMIZED=1 && start "" /min "%~dpnx0" %* && exit &:: https://stackoverflow.com/a/22357573
+
+echo %userdomain% | find "POLK"
 if %errorlevel%==1 ( goto eof )
-if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\<Change this to the name of the folder that appears in your windows 10 start menu after installing your .wcx file>" goto eof
-if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\RemoteApp and Desktop Connections\<Change this to the name of the folder that appears in you windows 7 start menu after installing your .wcx file>" goto eof
+if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Polk County (RADC)" goto eof
+if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\RemoteApp and Desktop Connections\Polk County" goto eof
 
 PowerShell.exe -ExecutionPolicy Bypass -File "C:\IT Folder\Area 51\programs\Install-RADCConnection.PS1"
 :eof
-exit /b
+exit
