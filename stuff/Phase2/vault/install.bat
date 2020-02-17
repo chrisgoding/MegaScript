@@ -7,69 +7,8 @@ set "path=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SystemR
 Call :Cleanup
 Call :TaskkillOutlook
 Call :Bitnesscheck
-if %OS%==32BIT ( goto x86 ) else ( goto x64 )
-
-:x86
-
-	:INST_WINx86_O2K10x86
-		DIR "%ProgramFiles%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx86_O2K13x86
-		Call :InstallVaultx86
-		Call :EVClient_OL2010
-
-	:INST_WINx86_O2K13x86
-		DIR "%ProgramFiles%\Microsoft Office\Office15\OUTLOOK.EXE|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx86_O2K16x86
-		Call :InstallVaultx86
-		Call :EVClient_OL2013
-
-	:INST_WINx86_O2K16x86
-		DIR "%ProgramFiles%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto end
-		Call :InstallVaultx86
-		Call :EVClient_OL2016
-
-goto end
-
-:x64
-	:INST_WINx64_O2K10x86
-		DIR "%ProgramFiles(x86)%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx64_O2K13x86
-		Call :InstallVaultx64
-		Call :EVClient_OL2010
-
-	:INST_WINx64_O2K13x86
-		DIR "%ProgramFiles(x86)%\Microsoft Office\Office15\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx64_O2K16x86
-		Call :InstallVaultx64
-		Call :EVClient_OL2013
-
-	:INST_WINx64_O2K16x86
-		DIR "%ProgramFiles(x86)%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx64_O2K10x64
-		Call :InstallVaultx64
-		Call :EVClient_OL2016
-
-	:INST_WINx64_O2K10x64
-		DIR "%ProgramFiles%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx64_O2K13x64
-		Call :InstallVaultx64
-		Call :EVClient_OL2010
-
-	:INST_WINx64_O2K13x64
-		DIR "%ProgramFiles%\Microsoft Office\Office15\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto INST_WINx64_O2K16x64
-		Call :InstallVaultx64
-		Call :EVClient_OL2013
-
-	:INST_WINx64_O2K16x64
-		DIR "%ProgramFiles%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
-		if %errorlevel% NEQ 0 goto end
-		Call :InstallVaultx64
-		Call :EVClient_OL2016
-
-goto end
-
+if %OS%==32BIT ( call :installx86 ) else ( call :x64 )
+goto eof
 
 :::::::::::::
 ::FUNCTIONS::
@@ -134,6 +73,67 @@ goto end
 	"%SystemPath%\WindowsPowerShell\v1.0\PowerShell.exe" Set-ExecutionPolicy -ExecutionPolicy Restricted
 	exit /b
 
-:end
+:installx86
+
+	:INST_WINx86_O2K10x86
+		DIR "%ProgramFiles%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx86_O2K13x86
+		Call :InstallVaultx86
+		Call :EVClient_OL2010
+
+	:INST_WINx86_O2K13x86
+		DIR "%ProgramFiles%\Microsoft Office\Office15\OUTLOOK.EXE|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx86_O2K16x86
+		Call :InstallVaultx86
+		Call :EVClient_OL2013
+
+	:INST_WINx86_O2K16x86
+		DIR "%ProgramFiles%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto end
+		Call :InstallVaultx86
+		Call :EVClient_OL2016
+	exit /b
+
+:installx64
+
+	:INST_WINx64_O2K10x86
+		DIR "%ProgramFiles(x86)%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx64_O2K13x86
+		Call :InstallVaultx64
+		Call :EVClient_OL2010
+
+	:INST_WINx64_O2K13x86
+		DIR "%ProgramFiles(x86)%\Microsoft Office\Office15\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx64_O2K16x86
+		Call :InstallVaultx64
+		Call :EVClient_OL2013
+
+	:INST_WINx64_O2K16x86
+		DIR "%ProgramFiles(x86)%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx64_O2K10x64
+		Call :InstallVaultx64
+		Call :EVClient_OL2016
+
+	:INST_WINx64_O2K10x64
+		DIR "%ProgramFiles%\Microsoft Office\Office14\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx64_O2K13x64
+		Call :InstallVaultx64
+		Call :EVClient_OL2010
+
+	:INST_WINx64_O2K13x64
+		DIR "%ProgramFiles%\Microsoft Office\Office15\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto INST_WINx64_O2K16x64
+		Call :InstallVaultx64
+		Call :EVClient_OL2013
+
+	:INST_WINx64_O2K16x64
+		DIR "%ProgramFiles%\Microsoft Office\Office16\OUTLOOK.EXE"|"%SystemPath%\find.exe" /i "OUTLOOK.EXE"
+		if %errorlevel% NEQ 0 goto end
+		Call :InstallVaultx64
+		Call :EVClient_OL2016
+
+	exit /b
+
+:eof
 	endlocal
 	popd
