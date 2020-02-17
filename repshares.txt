@@ -1,4 +1,5 @@
-\\169.254.2.35\megascript
-\\169.254.68.39\megascript
-\\169.254.7.11\megascript
-\\169.254.40.37\megascript
+169.254.1.1 \\reppc1\megascript
+169.254.2.1 \\reppc2\megascript
+169.254.3.1 \\reppc3\megascript
+169.254.4.1 \\reppc4\megascript
+169.254.5.1 \\reppc5\megascript
