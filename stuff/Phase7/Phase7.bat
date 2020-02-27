@@ -5,7 +5,7 @@
 :: I wrote a separate function for Kace HPIA, and it kinda sucks, but works. Definitely WIP
 :: I've also moved the self cleaning part of the HPIA function to "update replication shares.bat"
 :: which you can find in the root of the megascript directory. The cleaning takes a while when you have 50 models,
-:: so I no longer want every client to run it.
+:: so I didn't want every client to run it.
 :: v1.4
 :: added HPIA to the mix. SSM is still active, but once testing is complete, I'll have it switch over to all HPIA all the time.
 :: I have it creating the download directory on whatever rep share you're running from, and it's self cleaning.
@@ -100,14 +100,14 @@ Goto EOF
 	set softpaqpath=%CD%\HPIA\Drivers\%MODEL%\%version%
 	if not exist "%softpaqpath%" mkdir "%softpaqpath%"
 	if %kacerun%==true call :HPIAKACE
-	if %kacerun% NEQ true call :HPIAManual
+	if %kacerun% NEQ true call :HPIAKACE
 	"C:\windows\regedit.exe" /s HPIA\Enable_Open-File_Security_Warning.reg
 	exit /b
 
 :HPIAManual
 	Echo Installing drivers...
 	timeout 2 >nul
-	start /wait "Driver Updater" "C:\IT Folder\Area 51\programs\HPIA\HPImageAssistant.exe" /Operation:Analyze /Action:Install /Silent /Category:BIOS,Drivers,Firmware /ReportFolder:%log% /SoftpaqDownloadFolder:"%softpaqpath%"
+	start "Driver Updater" /wait "C:\IT Folder\Area 51\programs\HPIA\HPImageAssistant.exe" /Operation:Analyze /Action:Install /Silent /Category:BIOS,Drivers,Firmware /ReportFolder:%log% /SoftpaqDownloadFolder:"%softpaqpath%"
 	exit /b
 
 :HPIAKACE
@@ -127,15 +127,20 @@ Goto EOF
 	exit /b
 
 :DellCommandUpdate
-	if not exist %dcu%  DCU_Setup_2_4_0.exe /s /v"/qn"
+	if not exist %dcu% start "Dell updater" /wait DCU_Setup_3_1_0.exe /s
 	timeout 5 >nul
-	if exist "%cd%\Dell\%MODEL%\Catalog.xml" ( %dcu% /catalog "%cd%\Dell\%MODEL%\Catalog.xml" /log %log% ) else ( %dcu% /log %log% ) &:: runs local catalog if it exists, runs internet catalog otherwise
+	"%SystemPath%\tasklist.exe" /FI "imagename eq DCU-CLI.exe"|"%SystemPath%\find.exe" /I "DCU-CLI.exe"
+	if %errorlevel%==0 "%SystemPath%\taskkill.exe" /f /im DCU-CLI.exe >nul
+	"%SystemPath%\tasklist.exe" /FI "imagename eq Dellcommandupdate.exe"|"%SystemPath%\find.exe" /I "Dellcommandupdate.exe"
+	if %errorlevel%==0 "%SystemPath%\taskkill.exe" /f /im Dellcommandupdate.exe >nul
+	Start "Dell Command update" /wait %dcu% /applyupdates 
+::	if exist "%cd%\Dell\%MODEL%\Catalog.xml" ( %dcu% /catalog "%cd%\Dell\%MODEL%\Catalog.xml" /log %log% ) else ( %dcu% /log %log% ) &:: runs local catalog if it exists, runs internet catalog otherwise
 	exit /b
 
 :LenovoThinInstaller
 	::insufficiently tested, use at own risk
 	if not exist %thininstaller% ( "%TVUR%lenovothininstaller1.3.0007-2019-04-25.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART )
-	%thininstaller% /CM -search A -action INSTALL -repository "%TVUR%" -noicon -showprogress -includerebootpackages 1,3,4 -noreboot -log %log%
+	start "lenovo update" /wait %thininstaller% /CM -search A -action INSTALL -repository "%TVUR%" -noicon -showprogress -includerebootpackages 1,3,4 -noreboot -log %log%
 	exit /b
 
 :SurfaceDrivers
@@ -184,7 +189,7 @@ Goto EOF
 	for %%f in ( Microsoft\%Model%*%BuildNumber%*.msi ) do (
 		if exist "C:\IT Folder\MegaScript Progress Report\%%~nf.txt" exit /b
 		xcopy Microsoft\%%~nf.msi C:\Temp /y
-		START "" /WAIT "%SystemPath%\msiexec.exe" /i C:\Temp\%%~nf.msi /qn /l*v "C:\IT Folder\MegaScript Progress Report\SurfaceProDrivers.log"
+		START "Surface Update" /WAIT "%SystemPath%\msiexec.exe" /i C:\Temp\%%~nf.msi /qn /l*v "C:\IT Folder\MegaScript Progress Report\SurfaceProDrivers.log"
 		echo Updated Drivers > "C:\IT Folder\MegaScript Progress Report\%%~nf.txt" )
 	del "C:\IT Folder\MegaScript Progress Report\Model.txt" /f /s /q
 	exit /b
