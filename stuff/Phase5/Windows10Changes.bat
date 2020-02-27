@@ -28,6 +28,7 @@ Call :Services
 Call :DesktopBackground
 Call :DevicesandPrintersShortcut
 Call :DefaultFileAssociations
+Call :RSATInstaller
 if "%~1" == "" Call :Decrapifier
 if %quick%==false goto eof
 
@@ -55,37 +56,18 @@ goto eof
 :DOTNET35
 	"%SystemPath%\dism.exe" /online /get-features /format:table | "%SystemPath%\find.exe" "NetFx3                                       | Enabled"
 	if %errorlevel%==0 exit /b
-	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1909"
-	if %errorlevel%==0 goto dism1909
-	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1903"
-	if %errorlevel%==0 goto dism1903
-	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1809"
-	if %errorlevel%==0 goto dism1809
-	"%SystemPath%\reg.exe" Query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId | "%SystemPath%\find.exe" "1803"
-	if %errorlevel%==0 goto dism1803
+	FOR /F "tokens=3 USEBACKQ" %%F IN (`reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ReleaseId`) DO (SET version=%%F)
+	if not exist %version%sxs exit /b
+	"%SystemPath%\dism.exe" /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart /Source:%version%sxs /LimitAccess &:: enables .net 3.5
 	exit /b
-		:dism1909
-			"%SystemPath%\dism.exe" /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart /Source:1909sxs /LimitAccess &:: enables .net 3.5
-			exit /b
-
-		:dism1903
-			"%SystemPath%\dism.exe" /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart /Source:1903sxs /LimitAccess &:: enables .net 3.5
-			exit /b
-
-		:dism1809
-			"%SystemPath%\dism.exe" /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart /Source:1809sxs /LimitAccess &:: enables .net 3.5
-			exit /b
-
-		:dism1803
-			"%SystemPath%\dism.exe" /Online /Enable-Feature /FeatureName:NetFx3 /All /NoRestart /Source:1803sxs /LimitAccess &:: enables .net 3.5
-			exit /b
 
 :Win7PhotoViewer
 	"C:\windows\regedit.exe" /s photoviewer.reg
 	exit /b
 
 :Services
-	"%SystemPath%\sc.exe" config wlidsvc start= demand   &:: Turns on a service to make the microsoft store work
+	"%SystemPath%\sc.exe" config wlidsvc start= demand &:: Turns on a service to make the microsoft store work
+	"%SystemPath%\sc.exe" config BITS start= delayed-auto &:: BITS shouldn't be disabled, and I'm not sure why it sometimes is.
 	exit /b
 
 :DesktopBackground
@@ -108,6 +90,11 @@ goto eof
 
 :DefaultFileAssociations
 	"%SystemPath%\dism.exe" /online /import-defaultappassociations:CustomFileAssoc2016.xml /NoRestart
+	exit /b
+
+:RSATInstaller
+	If exist "C:\IT Folder\I want RSAT.txt" powershell -ExecutionPolicy Bypass -File "rsat.ps1"
+	del "C:\IT Folder\I want RSAT.txt" /f /s /q
 	exit /b
 
 :Decrapifier
